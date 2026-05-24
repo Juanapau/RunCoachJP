@@ -21,13 +21,12 @@
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
-    body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+    body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
     h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em}
 
     /* screens */
     .screen{display:none;padding-bottom:80px;animation:fiu .3s ease}
     .screen.active{display:block}
-    #sc-splash{min-height:calc(100vh - 64px)}
     @keyframes fiu{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
     .wrap{max-width:600px;margin:0 auto;padding:0 16px}
 
@@ -139,7 +138,7 @@
     .ltxt{font-size:18px;font-weight:600;color:var(--muted);min-height:28px}
 
     /* plan display */
-    .ph{background:linear-gradient(135deg,#1a0a09 0%,#2a0f0f 100%);border:1px solid var(--red-d);border-radius:var(--r);padding:24px;margin-bottom:24px}
+    .ph{background:linear-gradient(135deg,#1a0a09 0%,#2a0f0f 100%);border:1px solid var(--red-d);border-radius:var(--r);padding:16px;margin-bottom:14px}
     .ph .pn{font-size:clamp(26px,6vw,40px);color:#fff}
     .pm{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
     .pmi{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
@@ -165,9 +164,9 @@
     .tips li::before{content:'•';color:var(--red);font-size:20px;line-height:1;flex-shrink:0}
 
     /* splash */
-    #sc-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 20px 0}
-    .slogo{font-size:56px;color:var(--red);margin-bottom:6px;animation:fiu .5s ease}
-    .stit{font-size:clamp(42px,11vw,60px);line-height:.95;margin-bottom:8px}
+    #sc-splash{display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px 0}
+    .slogo{font-size:52px;color:var(--red);margin-bottom:4px;animation:fiu .5s ease}
+    .stit{font-size:clamp(40px,11vw,58px);line-height:.95;margin-bottom:8px}
     .sdesc{font-size:14px;color:#555;max-width:320px;line-height:1.6;margin-bottom:20px}
     .sacts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
 
@@ -176,7 +175,7 @@
     .sectit i{color:var(--red);font-size:.85em}
 
     /* consejos */
-    .csec{margin-top:32px;background:var(--card);border-radius:var(--r);padding:20px;border-left:4px solid var(--red)}
+    .csec{margin-top:16px;background:var(--card);border-radius:var(--r);padding:16px;border-left:4px solid var(--red)}
 
     /* empty */
     .empty{text-align:center;padding:24px 20px;color:var(--muted)}
@@ -184,14 +183,14 @@
     .empty p{font-size:15px;line-height:1.6}
 
     /* step nav */
-    .snav{display:flex;gap:12px;margin-top:28px}
+    .snav{display:flex;gap:12px;margin-top:16px}
     .snav .btn{flex:1}
 
     /* week header */
     .week-obj{font-size:13px;color:var(--muted);padding:8px 0 12px;line-height:1.5;border-bottom:1px solid var(--border);margin-bottom:8px}
 
     /* utils */
-    .mt4{margin-top:16px} .mt8{margin-top:32px} .mb4{margin-bottom:16px}
+    .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
     .tr{color:var(--red)} .tm{color:var(--muted)} .tsm{font-size:13px}
     .divider{height:1px;background:var(--border);margin:20px 0}
     ::-webkit-scrollbar{width:6px}
@@ -419,7 +418,7 @@
      LOADING
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-loading">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;text-align:center">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center">
     <div class="lic"><i class="fa-solid fa-person-running"></i></div>
     <h2 style="font-size:32px;margin:20px 0 8px">Diseñando tu plan</h2>
     <p class="tm" style="margin-bottom:24px">Aplicando principios de entrenamiento...</p>
@@ -432,7 +431,7 @@
      PLAN
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-plan">
-  <div class="wrap" style="padding-top:20px">
+  <div class="wrap" style="padding-top:14px">
     <div class="ph">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
         <i class="fa-solid fa-trophy" style="font-size:28px;color:var(--red)"></i>

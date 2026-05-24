@@ -31,8 +31,7 @@
     .wrap{max-width:600px;margin:0 auto;padding:0 16px}
 
     /* bottom nav */
-    #bnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:#111;border-top:1px solid var(--border);height:64px;align-items:center;justify-content:space-around}
-    #bnav.on{display:flex}
+    #bnav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;background:#111;border-top:1px solid var(--border);height:64px;align-items:center;justify-content:space-around}
     .nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:11px;padding:8px 0;transition:color .2s}
     .nb i{font-size:20px}
     .nb.act,.nb:hover{color:var(--red)}
@@ -165,24 +164,24 @@
     .tips li::before{content:'•';color:var(--red);font-size:20px;line-height:1;flex-shrink:0}
 
     /* splash */
-    #sc-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px}
-    .slogo{font-size:80px;color:var(--red);margin-bottom:16px;animation:fiu .5s ease}
-    .stit{font-size:clamp(52px,14vw,72px);line-height:.95;margin-bottom:12px}
-    .ssub{font-size:16px;color:var(--muted);margin-bottom:32px}
-    .sdesc{font-size:14px;color:#555;max-width:320px;line-height:1.6;margin-bottom:40px}
-    .sacts{display:flex;flex-direction:column;gap:14px;width:100%;max-width:320px}
+    #sc-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 20px}
+    .slogo{font-size:64px;color:var(--red);margin-bottom:8px;animation:fiu .5s ease}
+    .stit{font-size:clamp(46px,12vw,64px);line-height:.95;margin-bottom:8px}
+    .ssub{font-size:15px;color:var(--muted);margin-bottom:16px}
+    .sdesc{font-size:14px;color:#555;max-width:320px;line-height:1.6;margin-bottom:28px}
+    .sacts{display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px}
 
     /* section title */
-    .sectit{font-size:clamp(24px,5vw,32px);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .sectit{font-size:clamp(22px,5vw,28px);margin-bottom:14px;display:flex;align-items:center;gap:10px}
     .sectit i{color:var(--red);font-size:.85em}
 
     /* consejos */
     .csec{margin-top:32px;background:var(--card);border-radius:var(--r);padding:20px;border-left:4px solid var(--red)}
 
     /* empty */
-    .empty{text-align:center;padding:60px 20px;color:var(--muted)}
-    .empty i{font-size:56px;color:#333;margin-bottom:16px;display:block}
-    .empty p{font-size:16px;line-height:1.6}
+    .empty{text-align:center;padding:32px 20px;color:var(--muted)}
+    .empty i{font-size:48px;color:#333;margin-bottom:12px;display:block}
+    .empty p{font-size:15px;line-height:1.6}
 
     /* step nav */
     .snav{display:flex;gap:12px;margin-top:28px}
@@ -231,23 +230,11 @@
 ══════════════════════════════════════ -->
 <div class="screen active" id="sc-splash">
   <div class="slogo"><i class="fa-solid fa-person-running"></i></div>
-  <h1 class="stit">RunCoach<br><span class="tr">IA</span></h1>
-  <p class="ssub">Tu entrenador personal inteligente</p>
+  <h1 class="stit">RunCoach</h1>
   <p class="sdesc">Planes de entrenamiento personalizados para corredores, diseñados según tu perfil real. Sin internet, sin cuentas, sin costos.</p>
   <div class="sacts">
     <button class="btn bp bfull" onclick="startWizard()"><i class="fa-solid fa-circle-arrow-right"></i> Crear nuevo plan</button>
     <button class="btn bo bfull" onclick="navTo('history')"><i class="fa-solid fa-list"></i> Ver mis planes</button>
-  </div>
-  <div class="mt8" style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap">
-    <div style="text-align:center;font-size:13px;color:#444">
-      <i class="fa-solid fa-wifi-slash" style="font-size:22px;color:#333;display:block;margin-bottom:6px"></i>100% offline
-    </div>
-    <div style="text-align:center;font-size:13px;color:#444">
-      <i class="fa-solid fa-lock" style="font-size:22px;color:#333;display:block;margin-bottom:6px"></i>Sin cuenta
-    </div>
-    <div style="text-align:center;font-size:13px;color:#444">
-      <i class="fa-solid fa-dollar-sign" style="font-size:22px;color:#333;display:block;margin-bottom:6px"></i>Sin costo
-    </div>
   </div>
 </div>
 
@@ -497,8 +484,6 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('sc-' + id).classList.add('active');
   window.scrollTo(0, 0);
-  const bnav = document.getElementById('bnav');
-  bnav.classList.toggle('on', id !== 'splash' && id !== 'loading');
   ['ini','new','his'].forEach(k => document.getElementById('nb-'+k).classList.remove('act'));
   const nmap = {splash:'ini', wizard:'new', history:'his', plan:'his'};
   if (nmap[id]) document.getElementById('nb-'+nmap[id]).classList.add('act');

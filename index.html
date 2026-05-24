@@ -163,12 +163,24 @@
     .tips li:last-child{border-bottom:none}
     .tips li::before{content:'•';color:var(--red);font-size:20px;line-height:1;flex-shrink:0}
 
-    /* splash */
-    #sc-splash{display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px 0}
-    .slogo{font-size:52px;color:var(--red);margin-bottom:4px;animation:fiu .5s ease}
-    .stit{font-size:clamp(40px,11vw,58px);line-height:.95;margin-bottom:8px}
-    .sdesc{font-size:14px;color:#555;max-width:320px;line-height:1.6;margin-bottom:20px}
-    .sacts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
+    /* splash — portada fija de la app */
+    #sc-splash{
+      position:fixed;inset:0;z-index:300;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;padding:32px 24px;
+      background:var(--bg);
+      transition:opacity .3s ease,visibility .3s ease;
+    }
+    #sc-splash.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    #sc-splash::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--red)}
+    #sc-splash::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--border)}
+    .slogo{font-size:58px;color:var(--red);margin-bottom:0}
+    .stit{font-size:clamp(46px,13vw,68px);line-height:.9;margin-bottom:6px;color:#fff}
+    .stagline{font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;margin-bottom:20px}
+    .sdivider{width:40px;height:3px;background:var(--red);margin:0 auto 18px}
+    .sdesc{font-size:14px;color:#484848;max-width:290px;line-height:1.7;margin-bottom:28px}
+    .sacts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
+    .sfoot{margin-top:28px;font-size:11px;color:#2e2e2e;letter-spacing:.1em;text-transform:uppercase}
 
     /* section title */
     .sectit{font-size:clamp(22px,5vw,28px);margin-bottom:14px;display:flex;align-items:center;gap:10px}
@@ -219,22 +231,29 @@
 
 <!-- BOTTOM NAV -->
 <nav id="bnav">
-  <button class="nb act" id="nb-ini" onclick="navTo('splash')"><i class="fa-solid fa-house"></i><span>Inicio</span></button>
-  <button class="nb" id="nb-new" onclick="startWizard()"><i class="fa-solid fa-circle-plus"></i><span>Nuevo Plan</span></button>
-  <button class="nb" id="nb-his" onclick="navTo('history')"><i class="fa-solid fa-list"></i><span>Mis Planes</span></button>
+  <button class="nb act" id="nb-ini" onclick="goHome()"><i class="fa-solid fa-house"></i><span>Inicio</span></button>
+  <button class="nb" id="nb-new" onclick="goApp('wizard')"><i class="fa-solid fa-circle-plus"></i><span>Nuevo Plan</span></button>
+  <button class="nb" id="nb-his" onclick="goApp('history')"><i class="fa-solid fa-list"></i><span>Mis Planes</span></button>
 </nav>
 
 <!-- ══════════════════════════════════════
-     SPLASH
+     SPLASH — PORTADA
 ══════════════════════════════════════ -->
-<div class="screen active" id="sc-splash">
+<div id="sc-splash">
   <div class="slogo"><i class="fa-solid fa-person-running"></i></div>
   <h1 class="stit">RunCoach</h1>
-  <p class="sdesc">Planes de entrenamiento personalizados para corredores, diseñados según tu perfil real. Sin internet, sin cuentas, sin costos.</p>
+  <p class="stagline">Tu entrenador de running</p>
+  <div class="sdivider"></div>
+  <p class="sdesc">Planes personalizados según tu perfil real. Sin internet, sin cuentas, sin costos.</p>
   <div class="sacts">
-    <button class="btn bp bfull" onclick="startWizard()"><i class="fa-solid fa-circle-arrow-right"></i> Crear nuevo plan</button>
-    <button class="btn bo bfull" onclick="navTo('history')"><i class="fa-solid fa-list"></i> Ver mis planes</button>
+    <button class="btn bp bfull" onclick="goApp('wizard')">
+      <i class="fa-solid fa-circle-arrow-right"></i> Crear nuevo plan
+    </button>
+    <button class="btn bo bfull" onclick="goApp('history')">
+      <i class="fa-solid fa-list"></i> Ver mis planes
+    </button>
   </div>
+  <p class="sfoot">100% offline &nbsp;·&nbsp; sin registro &nbsp;·&nbsp; gratis</p>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -448,7 +467,7 @@
       <button class="btn bp bfull" id="bsave" onclick="savePlan()"><i class="fa-solid fa-floppy-disk"></i> Guardar plan</button>
     </div>
     <div style="text-align:center;margin-top:14px">
-      <button class="btn bor" onclick="navTo('splash')"><i class="fa-solid fa-circle-arrow-left"></i> Volver al inicio</button>
+      <button class="btn bor" onclick="goHome()"><i class="fa-solid fa-circle-arrow-left"></i> Volver al inicio</button>
     </div>
     <div style="height:20px"></div>
   </div>
@@ -479,18 +498,44 @@ let lInterval = null;
 // ═══════════════════════════════════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════════════════════════════════
+function goApp(id) {
+  // Hide splash overlay
+  document.getElementById('sc-splash').classList.add('hidden');
+  // Show target screen
+  if (id === 'wizard') { cStep = 1; renderStep(1); }
+  if (id === 'history') renderHistory();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('sc-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+  // Update nav
+  ['ini','new','his'].forEach(k => document.getElementById('nb-'+k).classList.remove('act'));
+  const nmap = {wizard:'new', history:'his', plan:'his'};
+  if (nmap[id]) document.getElementById('nb-'+nmap[id]).classList.add('act');
+}
+
+function goHome() {
+  // Show splash overlay again
+  document.getElementById('sc-splash').classList.remove('hidden');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  ['ini','new','his'].forEach(k => document.getElementById('nb-'+k).classList.remove('act'));
+  document.getElementById('nb-ini').classList.add('act');
+}
+
 function showScreen(id) {
+  document.getElementById('sc-splash').classList.add('hidden');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('sc-' + id).classList.add('active');
   window.scrollTo(0, 0);
   ['ini','new','his'].forEach(k => document.getElementById('nb-'+k).classList.remove('act'));
-  const nmap = {splash:'ini', wizard:'new', history:'his', plan:'his'};
+  const nmap = {wizard:'new', history:'his', plan:'his'};
   if (nmap[id]) document.getElementById('nb-'+nmap[id]).classList.add('act');
 }
+
 function navTo(id) {
   if (id === 'history') renderHistory();
   showScreen(id);
 }
+
 function startWizard() { cStep = 1; renderStep(1); showScreen('wizard'); }
 
 // ═══════════════════════════════════════════════════════════

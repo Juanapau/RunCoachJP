@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="theme-color" content="#C0392B">
-  <meta name="description" content="RunCoach IA — Planes de entrenamiento personalizados para corredores generados con inteligencia artificial">
+  <meta name="description" content="RunCoach IA — Planes de entrenamiento personalizados para corredores">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>RunCoach IA</title>
@@ -14,1581 +14,1085 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     :root {
-      --red: #C0392B;
-      --red-bright: #E74C3C;
-      --red-dark: #922B21;
-      --bg: #1a1a1a;
-      --bg-card: #222222;
-      --bg-input: #2a2a2a;
-      --text: #FFFFFF;
-      --text-muted: #AAAAAA;
-      --border: #333333;
-      --success: #27AE60;
-      --warning: #F39C12;
-      --radius: 12px;
+      --red:#C0392B; --red-b:#E74C3C; --red-d:#922B21;
+      --bg:#1a1a1a; --card:#222; --input:#2a2a2a;
+      --text:#fff; --muted:#aaa; --border:#333;
+      --ok:#27AE60; --warn:#F39C12; --r:12px;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Nunito', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-    h1, h2, h3, .display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.04em; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+    h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em}
 
-    /* ─── Layout ──────────────────────────────── */
-    .screen { display: none; min-height: 100vh; padding-bottom: 80px; animation: fadeInUp 0.3s ease; }
-    .screen.active { display: block; }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .container { max-width: 600px; margin: 0 auto; padding: 0 16px; }
+    /* screens */
+    .screen{display:none;min-height:100vh;padding-bottom:80px;animation:fiu .3s ease}
+    .screen.active{display:block}
+    @keyframes fiu{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+    .wrap{max-width:600px;margin:0 auto;padding:0 16px}
 
-    /* ─── Bottom nav ──────────────────────────── */
-    #bottom-nav {
-      display: none;
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      background: #111; border-top: 1px solid var(--border);
-      height: 64px; align-items: center; justify-content: space-around;
-    }
-    #bottom-nav.visible { display: flex; }
-    .nav-btn {
-      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 4px; color: var(--text-muted); background: none; border: none;
-      cursor: pointer; font-family: 'Nunito', sans-serif; font-size: 11px; padding: 8px 0;
-      transition: color 0.2s;
-    }
-    .nav-btn i { font-size: 20px; }
-    .nav-btn.active, .nav-btn:hover { color: var(--red); }
+    /* bottom nav */
+    #bnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:#111;border-top:1px solid var(--border);height:64px;align-items:center;justify-content:space-around}
+    #bnav.on{display:flex}
+    .nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:11px;padding:8px 0;transition:color .2s}
+    .nb i{font-size:20px}
+    .nb.act,.nb:hover{color:var(--red)}
 
-    /* ─── Buttons ─────────────────────────────── */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 700;
-      padding: 14px 28px; border-radius: 8px; cursor: pointer; border: none;
-      transition: all 0.2s; min-height: 50px; text-decoration: none;
-    }
-    .btn-primary { background: var(--red); color: #fff; }
-    .btn-primary:hover { background: var(--red-bright); transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-outline { background: transparent; color: #fff; border: 2px solid #fff; }
-    .btn-outline:hover { border-color: var(--red); color: var(--red); }
-    .btn-outline-red { background: transparent; color: var(--red); border: 2px solid var(--red); }
-    .btn-outline-red:hover { background: var(--red); color: #fff; }
-    .btn-danger { background: var(--red-dark); color: #fff; }
-    .btn-danger:hover { background: var(--red); }
-    .btn-success { background: var(--success); color: #fff; }
-    .btn-full { width: 100%; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-    .btn-sm { padding: 10px 18px; font-size: 14px; min-height: 40px; }
+    /* buttons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;padding:14px 28px;border-radius:8px;cursor:pointer;border:none;transition:all .2s;min-height:50px;text-decoration:none}
+    .bp{background:var(--red);color:#fff}.bp:hover{background:var(--red-b);transform:translateY(-1px)}
+    .bo{background:transparent;color:#fff;border:2px solid #fff}.bo:hover{border-color:var(--red);color:var(--red)}
+    .bor{background:transparent;color:var(--red);border:2px solid var(--red)}.bor:hover{background:var(--red);color:#fff}
+    .bsuc{background:var(--ok);color:#fff}
+    .bdang{background:var(--red-d);color:#fff}.bdang:hover{background:var(--red)}
+    .bfull{width:100%}
+    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+    .bsm{padding:10px 18px;font-size:14px;min-height:40px}
 
-    /* ─── Cards ───────────────────────────────── */
-    .card {
-      background: var(--bg-card);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-      border: 1px solid var(--border);
-    }
-    .card-accent { border-left: 4px solid var(--red); }
+    /* cards */
+    .card{background:var(--card);border-radius:var(--r);padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.4);border:1px solid var(--border)}
+    .cacc{border-left:4px solid var(--red)}
 
-    /* ─── Form elements ───────────────────────── */
-    .form-group { margin-bottom: 18px; }
-    .form-label {
-      display: block; font-size: 14px; font-weight: 600;
-      color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .form-control {
-      width: 100%; background: var(--bg-input); border: 2px solid var(--border);
-      border-radius: 8px; padding: 12px 14px; color: var(--text);
-      font-family: 'Nunito', sans-serif; font-size: 16px;
-      transition: border-color 0.2s; min-height: 48px; appearance: none;
-    }
-    .form-control:focus { outline: none; border-color: var(--red); }
-    .form-control.error { border-color: var(--red-bright) !important; }
-    .form-control::placeholder { color: #555; }
-    select.form-control { cursor: pointer; }
-    select.form-control option { background: var(--bg-input); }
-    .form-hint { font-size: 12px; color: #666; margin-top: 4px; }
-    .form-error { font-size: 12px; color: var(--red-bright); margin-top: 4px; display: none; }
-    .form-error.show { display: block; }
+    /* form */
+    .fg{margin-bottom:18px}
+    .fl{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+    .fc{width:100%;background:var(--input);border:2px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:16px;transition:border-color .2s;min-height:48px;appearance:none}
+    .fc:focus{outline:none;border-color:var(--red)}
+    .fc.err{border-color:var(--red-b)!important}
+    .fc::placeholder{color:#555}
+    select.fc{cursor:pointer}
+    select.fc option{background:var(--input)}
+    .fhint{font-size:12px;color:#666;margin-top:4px}
+    .ferr{font-size:12px;color:var(--red-b);margin-top:4px;display:none}
+    .ferr.on{display:block}
 
-    /* ─── Radio & Checkbox ────────────────────── */
-    .radio-group, .check-group { display: flex; flex-wrap: wrap; gap: 8px; }
-    .radio-option, .check-option {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--bg-input); border: 2px solid var(--border);
-      border-radius: 8px; padding: 10px 14px; cursor: pointer;
-      transition: all 0.2s; font-size: 15px; user-select: none;
-    }
-    .radio-option:hover, .check-option:hover { border-color: var(--red); }
-    .radio-option input, .check-option input { display: none; }
-    .radio-option.selected, .check-option.selected { border-color: var(--red); background: rgba(192,57,43,0.15); color: #fff; }
+    /* radio / check */
+    .rg,.cg{display:flex;flex-wrap:wrap;gap:8px}
+    .ro,.co{display:flex;align-items:center;gap:8px;background:var(--input);border:2px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;transition:all .2s;font-size:15px;user-select:none}
+    .ro:hover,.co:hover{border-color:var(--red)}
+    .ro input,.co input{display:none}
+    .ro.sel,.co.sel{border-color:var(--red);background:rgba(192,57,43,.15);color:#fff}
 
-    /* ─── Day toggles ─────────────────────────── */
-    .day-toggles { display: flex; gap: 8px; flex-wrap: wrap; }
-    .day-toggle {
-      width: 44px; height: 44px; border-radius: 50%; background: var(--bg-input);
-      border: 2px solid var(--border); color: var(--text-muted); font-weight: 700;
-      font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex;
-      align-items: center; justify-content: center; font-family: 'Nunito', sans-serif;
-    }
-    .day-toggle.selected { background: var(--red); border-color: var(--red); color: #fff; }
+    /* day toggles */
+    .dts{display:flex;gap:8px;flex-wrap:wrap}
+    .dt{width:44px;height:44px;border-radius:50%;background:var(--input);border:2px solid var(--border);color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif}
+    .dt.sel{background:var(--red);border-color:var(--red);color:#fff}
 
-    /* ─── Slider ──────────────────────────────── */
-    .slider-wrap { position: relative; }
-    .slider-value {
-      position: absolute; right: 0; top: -24px;
-      font-size: 16px; font-weight: 800; color: var(--red);
-    }
-    input[type=range] {
-      width: 100%; height: 6px; appearance: none; background: var(--border);
-      border-radius: 3px; outline: none; cursor: pointer;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      appearance: none; width: 22px; height: 22px; border-radius: 50%;
-      background: var(--red); cursor: pointer;
-    }
-    input[type=range]::-moz-range-thumb {
-      width: 22px; height: 22px; border-radius: 50%; background: var(--red);
-      cursor: pointer; border: none;
-    }
+    /* slider */
+    .sw{position:relative}
+    .sv{position:absolute;right:0;top:-24px;font-size:16px;font-weight:800;color:var(--red)}
+    input[type=range]{width:100%;height:6px;appearance:none;background:var(--border);border-radius:3px;outline:none;cursor:pointer}
+    input[type=range]::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:50%;background:var(--red);cursor:pointer}
+    input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--red);cursor:pointer;border:none}
 
-    /* ─── Progress bar ────────────────────────── */
-    .progress-wrap { margin-bottom: 24px; }
-    .progress-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-muted); }
-    .progress-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--red); border-radius: 2px; transition: width 0.4s ease; }
+    /* progress */
+    .pw{margin-bottom:24px}
+    .pl{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:var(--muted)}
+    .pt{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+    .pf{height:100%;background:var(--red);border-radius:2px;transition:width .4s ease}
 
-    /* ─── Step header ─────────────────────────── */
-    .step-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
-    .step-icon {
-      width: 52px; height: 52px; border-radius: 50%; background: rgba(192,57,43,0.15);
-      border: 2px solid var(--red); display: flex; align-items: center; justify-content: center;
-      color: var(--red); font-size: 22px; flex-shrink: 0;
-    }
-    .step-title { font-size: clamp(22px, 5vw, 28px); color: #fff; line-height: 1; }
-    .step-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    /* step header */
+    .sh{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+    .si{width:52px;height:52px;border-radius:50%;background:rgba(192,57,43,.15);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;color:var(--red);font-size:22px;flex-shrink:0}
+    .st{font-size:clamp(22px,5vw,28px);color:#fff;line-height:1}
+    .ss{font-size:13px;color:var(--muted);margin-top:4px}
 
-    /* ─── Toast ───────────────────────────────── */
-    #toast {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: var(--success); color: #fff; padding: 12px 20px; border-radius: 24px;
-      font-weight: 700; font-size: 14px; z-index: 999; opacity: 0;
-      transition: all 0.3s; display: flex; align-items: center; gap: 8px;
-      white-space: nowrap;
-    }
-    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    /* toast */
+    #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ok);color:#fff;padding:12px 20px;border-radius:24px;font-weight:700;font-size:14px;z-index:999;opacity:0;transition:all .3s;display:flex;align-items:center;gap:8px;white-space:nowrap}
+    #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
-    /* ─── Modal ───────────────────────────────── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-      z-index: 200; align-items: center; justify-content: center; padding: 16px;
-    }
-    .modal-overlay.open { display: flex; animation: fadeInUp 0.25s ease; }
-    .modal-box { background: var(--bg-card); border-radius: var(--radius); padding: 28px; max-width: 400px; width: 100%; border: 1px solid var(--border); }
-    .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
-    .modal-body { font-size: 15px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
-    .modal-actions { display: flex; gap: 12px; }
+    /* modal */
+    .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;padding:16px}
+    .mo.open{display:flex;animation:fiu .25s ease}
+    .mb{background:var(--card);border-radius:var(--r);padding:28px;max-width:400px;width:100%;border:1px solid var(--border)}
+    .mt2{font-size:20px;font-weight:800;margin-bottom:12px}
+    .mbd{font-size:15px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+    .mac{display:flex;gap:12px}
 
-    /* ─── Accordion ───────────────────────────── */
-    .accordion-item { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
-    .accordion-header {
-      background: var(--bg-card); padding: 16px 18px; cursor: pointer;
-      display: flex; align-items: center; justify-content: space-between;
-      font-weight: 700; font-size: 16px; user-select: none; transition: background 0.2s;
-    }
-    .accordion-header:hover { background: #2a2a2a; }
-    .accordion-header .chevron { transition: transform 0.3s; color: var(--red); }
-    .accordion-header.open .chevron { transform: rotate(180deg); }
-    .accordion-body { display: none; padding: 0 18px 18px; background: var(--bg-card); }
-    .accordion-body.open { display: block; }
+    /* accordion */
+    .ai{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px}
+    .ah{background:var(--card);padding:16px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:16px;user-select:none;transition:background .2s}
+    .ah:hover{background:#2a2a2a}
+    .ah .chv{transition:transform .3s;color:var(--red)}
+    .ah.open .chv{transform:rotate(180deg)}
+    .abody{display:none;padding:0 18px 18px;background:var(--card)}
+    .abody.open{display:block}
 
-    /* ─── Semana cards in plan ────────────────── */
-    .session-row {
-      display: grid; grid-template-columns: auto 1fr auto;
-      gap: 10px; align-items: start; padding: 10px 0;
-      border-bottom: 1px solid var(--border); font-size: 14px;
-    }
-    .session-row:last-child { border-bottom: none; }
-    .session-day { font-weight: 800; color: var(--red); min-width: 32px; }
-    .session-type { font-weight: 600; }
-    .session-detail { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
-    .session-badge {
-      font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;
-      white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .badge-suave { background: rgba(39,174,96,0.2); color: #2ecc71; }
-    .badge-largo { background: rgba(192,57,43,0.2); color: #e74c3c; }
-    .badge-intervalo { background: rgba(243,156,18,0.2); color: #f39c12; }
-    .badge-descanso { background: rgba(127,140,141,0.2); color: #95a5a6; }
-    .badge-fuerza { background: rgba(52,152,219,0.2); color: #3498db; }
+    /* session rows */
+    .sr{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+    .sr:last-child{border-bottom:none}
+    .sd{font-weight:800;color:var(--red)}
+    .stype{font-weight:600}
+    .sdet{color:var(--muted);font-size:13px;margin-top:2px}
+    .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;white-space:nowrap;text-transform:uppercase;letter-spacing:.05em}
+    .bs{background:rgba(39,174,96,.2);color:#2ecc71}
+    .bl{background:rgba(192,57,43,.2);color:#e74c3c}
+    .bi{background:rgba(243,156,18,.2);color:#f39c12}
+    .bd{background:rgba(127,140,141,.2);color:#95a5a6}
+    .bf{background:rgba(52,152,219,.2);color:#3498db}
 
-    /* ─── Loading screen ──────────────────────── */
-    .loading-icon { font-size: 64px; color: var(--red); animation: pulse 1.5s ease-in-out infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.92); } }
-    .loading-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin: 24px 0; }
-    .loading-bar-fill { height: 100%; background: var(--red); border-radius: 2px; animation: loadingAnim 2s ease-in-out infinite; }
-    @keyframes loadingAnim { 0% { width: 0; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0; margin-left: 100%; } }
-    .typing-text { font-size: 18px; font-weight: 600; color: var(--text-muted); min-height: 28px; }
+    /* loading */
+    .lic{font-size:64px;color:var(--red);animation:pulse 1.4s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(.92)}}
+    .lbar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:24px 0}
+    .lbf{height:100%;background:var(--red);border-radius:2px;animation:lani 2s ease-in-out infinite}
+    @keyframes lani{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
+    .ltxt{font-size:18px;font-weight:600;color:var(--muted);min-height:28px}
 
-    /* ─── Plan display ────────────────────────── */
-    .plan-raw { background: #111; border-radius: 10px; padding: 16px; font-size: 13px; line-height: 1.8; color: #ccc; white-space: pre-wrap; overflow-x: auto; max-height: 60vh; overflow-y: auto; }
-    .plan-header { background: linear-gradient(135deg, #1a0a09 0%, #2a0f0f 100%); border: 1px solid var(--red-dark); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
-    .plan-header .plan-name { font-size: clamp(26px, 6vw, 40px); color: #fff; }
-    .plan-header .plan-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
-    .plan-meta-item { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-muted); }
-    .plan-meta-item i { color: var(--red); }
+    /* plan display */
+    .ph{background:linear-gradient(135deg,#1a0a09 0%,#2a0f0f 100%);border:1px solid var(--red-d);border-radius:var(--r);padding:24px;margin-bottom:24px}
+    .ph .pn{font-size:clamp(26px,6vw,40px);color:#fff}
+    .pm{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+    .pmi{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+    .pmi i{color:var(--red)}
 
-    /* ─── History cards ───────────────────────── */
-    .history-card { display: flex; flex-direction: column; gap: 12px; }
-    .history-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .history-card-name { font-size: 18px; font-weight: 800; }
-    .history-card-date { font-size: 12px; color: var(--text-muted); }
-    .history-card-meta { display: flex; gap: 12px; flex-wrap: wrap; }
-    .history-chip { font-size: 12px; background: rgba(192,57,43,0.15); border: 1px solid var(--red-dark); color: var(--red-bright); padding: 4px 10px; border-radius: 20px; font-weight: 600; }
-    .history-card-actions { display: flex; gap: 10px; }
+    /* history */
+    .hc{display:flex;flex-direction:column;gap:12px}
+    .hch{display:flex;justify-content:space-between;align-items:flex-start}
+    .hcn{font-size:18px;font-weight:800}
+    .hcd{font-size:12px;color:var(--muted)}
+    .hcm{display:flex;gap:12px;flex-wrap:wrap}
+    .chip{font-size:12px;background:rgba(192,57,43,.15);border:1px solid var(--red-d);color:var(--red-b);padding:4px 10px;border-radius:20px;font-weight:600}
+    .hca{display:flex;gap:10px}
 
-    /* ─── Warning box ─────────────────────────── */
-    .warning-box { background: rgba(243,156,18,0.1); border: 1px solid rgba(243,156,18,0.4); border-radius: 8px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #f39c12; }
-    .warning-box i { margin-top: 1px; flex-shrink: 0; }
+    /* warning */
+    .wbox{background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.4);border-radius:8px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--warn)}
+    .wbox i{margin-top:1px;flex-shrink:0}
 
-    /* ─── Tips section ────────────────────────── */
-    .tips-list { list-style: none; }
-    .tips-list li { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.6; }
-    .tips-list li:last-child { border-bottom: none; }
-    .tips-list li::before { content: '•'; color: var(--red); font-size: 20px; line-height: 1; flex-shrink: 0; }
+    /* tips */
+    .tips{list-style:none}
+    .tips li{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;line-height:1.6}
+    .tips li:last-child{border-bottom:none}
+    .tips li::before{content:'•';color:var(--red);font-size:20px;line-height:1;flex-shrink:0}
 
-    /* ─── Splash screen ───────────────────────── */
-    #screen-splash { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; }
-    .splash-logo { font-size: 80px; color: var(--red); margin-bottom: 16px; animation: fadeInUp 0.5s ease; }
-    .splash-title { font-size: clamp(52px, 14vw, 72px); line-height: 0.95; margin-bottom: 12px; }
-    .splash-subtitle { font-size: 16px; color: var(--text-muted); margin-bottom: 32px; }
-    .splash-desc { font-size: 14px; color: #555; max-width: 320px; line-height: 1.6; margin-bottom: 40px; }
-    .splash-actions { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 320px; }
+    /* splash */
+    #sc-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px}
+    .slogo{font-size:80px;color:var(--red);margin-bottom:16px;animation:fiu .5s ease}
+    .stit{font-size:clamp(52px,14vw,72px);line-height:.95;margin-bottom:12px}
+    .ssub{font-size:16px;color:var(--muted);margin-bottom:32px}
+    .sdesc{font-size:14px;color:#555;max-width:320px;line-height:1.6;margin-bottom:40px}
+    .sacts{display:flex;flex-direction:column;gap:14px;width:100%;max-width:320px}
 
-    /* ─── API key input section ───────────────── */
-    .api-key-section { width: 100%; max-width: 360px; margin-top: 24px; }
-    .api-key-label { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-    .api-key-wrap { position: relative; }
-    .api-key-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #555; font-size: 16px; }
-    .api-key-wrap .form-control { padding-left: 38px; }
-    .api-key-status { font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
-    .api-key-status.ok { color: var(--success); }
-    .api-key-status.missing { color: var(--warning); }
+    /* section title */
+    .sectit{font-size:clamp(24px,5vw,32px);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .sectit i{color:var(--red);font-size:.85em}
 
-    /* ─── Section titles ──────────────────────── */
-    .section-title { font-size: clamp(24px, 5vw, 32px); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-    .section-title i { color: var(--red); font-size: 0.85em; }
+    /* consejos */
+    .csec{margin-top:32px;background:var(--card);border-radius:var(--r);padding:20px;border-left:4px solid var(--red)}
 
-    /* ─── Consejos section ────────────────────── */
-    .consejos-section { margin-top: 32px; background: var(--bg-card); border-radius: var(--radius); padding: 20px; border-left: 4px solid var(--red); }
+    /* empty */
+    .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty i{font-size:56px;color:#333;margin-bottom:16px;display:block}
+    .empty p{font-size:16px;line-height:1.6}
 
-    /* ─── Empty state ─────────────────────────── */
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-    .empty-state i { font-size: 56px; color: #333; margin-bottom: 16px; display: block; }
-    .empty-state p { font-size: 16px; line-height: 1.6; }
+    /* step nav */
+    .snav{display:flex;gap:12px;margin-top:28px}
+    .snav .btn{flex:1}
 
-    /* ─── Scrollbar ───────────────────────────── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #111; }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--red); }
+    /* week header */
+    .week-obj{font-size:13px;color:var(--muted);padding:8px 0 12px;line-height:1.5;border-bottom:1px solid var(--border);margin-bottom:8px}
 
-    /* ─── Utilities ───────────────────────────── */
-    .mt-4 { margin-top: 16px; }
-    .mt-8 { margin-top: 32px; }
-    .mb-4 { margin-bottom: 16px; }
-    .flex { display: flex; }
-    .flex-col { flex-direction: column; }
-    .gap-2 { gap: 8px; }
-    .gap-3 { gap: 12px; }
-    .items-center { align-items: center; }
-    .justify-between { justify-content: space-between; }
-    .text-red { color: var(--red); }
-    .text-muted { color: var(--text-muted); }
-    .text-sm { font-size: 13px; }
-    .fw-bold { font-weight: 700; }
-    .divider { height: 1px; background: var(--border); margin: 20px 0; }
-
-    /* ─── Step nav buttons ────────────────────── */
-    .step-nav { display: flex; gap: 12px; margin-top: 28px; }
-    .step-nav .btn { flex: 1; }
-
-    @media (max-width: 480px) {
-      .container { padding: 0 12px; }
-      .btn { padding: 14px 20px; }
-      .modal-actions { flex-direction: column; }
-    }
+    /* utils */
+    .mt4{margin-top:16px} .mt8{margin-top:32px} .mb4{margin-bottom:16px}
+    .tr{color:var(--red)} .tm{color:var(--muted)} .tsm{font-size:13px}
+    .divider{height:1px;background:var(--border);margin:20px 0}
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-track{background:#111}
+    ::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--red)}
+    @media(max-width:480px){.wrap{padding:0 12px}.btn{padding:14px 20px}.mac{flex-direction:column}}
   </style>
 </head>
 <body>
 
-<!-- ─────────────────── TOAST ─────────────────── -->
-<div id="toast"><i class="fa-solid fa-circle-check"></i> <span id="toast-msg"></span></div>
+<!-- TOAST -->
+<div id="toast"><i class="fa-solid fa-circle-check"></i><span id="tmsg"></span></div>
 
-<!-- ─────────────────── MODAL ─────────────────── -->
-<div class="modal-overlay" id="modal">
-  <div class="modal-box">
-    <div class="modal-title" id="modal-title"></div>
-    <div class="modal-body" id="modal-body"></div>
-    <div class="modal-actions">
-      <button class="btn btn-danger btn-full" id="modal-confirm">Eliminar</button>
-      <button class="btn btn-outline btn-full" id="modal-cancel">Cancelar</button>
+<!-- MODAL -->
+<div class="mo" id="modal">
+  <div class="mb">
+    <div class="mt2" id="mtit"></div>
+    <div class="mbd" id="mbod"></div>
+    <div class="mac">
+      <button class="btn bdang bfull" id="mok">Eliminar</button>
+      <button class="btn bo bfull" id="mcancel">Cancelar</button>
     </div>
   </div>
 </div>
 
-<!-- ─────────────────── BOTTOM NAV ─────────────────── -->
-<nav id="bottom-nav">
-  <button class="nav-btn active" id="nav-inicio" onclick="navTo('splash')">
-    <i class="fa-solid fa-house"></i><span>Inicio</span>
-  </button>
-  <button class="nav-btn" id="nav-nuevo" onclick="navTo('wizard')">
-    <i class="fa-solid fa-circle-plus"></i><span>Nuevo Plan</span>
-  </button>
-  <button class="nav-btn" id="nav-historial" onclick="navTo('history')">
-    <i class="fa-solid fa-list"></i><span>Mis Planes</span>
-  </button>
+<!-- BOTTOM NAV -->
+<nav id="bnav">
+  <button class="nb act" id="nb-ini" onclick="navTo('splash')"><i class="fa-solid fa-house"></i><span>Inicio</span></button>
+  <button class="nb" id="nb-new" onclick="startWizard()"><i class="fa-solid fa-circle-plus"></i><span>Nuevo Plan</span></button>
+  <button class="nb" id="nb-his" onclick="navTo('history')"><i class="fa-solid fa-list"></i><span>Mis Planes</span></button>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════
-     SCREEN 0 — SPLASH
-═══════════════════════════════════════════════════ -->
-<div class="screen active" id="screen-splash">
-  <div class="splash-logo"><i class="fa-solid fa-person-running"></i></div>
-  <h1 class="splash-title">RunCoach<br><span class="text-red">IA</span></h1>
-  <p class="splash-subtitle">Tu entrenador personal inteligente</p>
-  <p class="splash-desc">Planes de entrenamiento personalizados para corredores, generados con inteligencia artificial según tu perfil real.</p>
-  
-  <div class="splash-actions">
-    <button class="btn btn-primary btn-full" onclick="startWizard()">
-      <i class="fa-solid fa-circle-arrow-right"></i> Crear nuevo plan
-    </button>
-    <button class="btn btn-outline btn-full" onclick="navTo('history')">
-      <i class="fa-solid fa-list"></i> Ver mis planes
-    </button>
+<!-- ══════════════════════════════════════
+     SPLASH
+══════════════════════════════════════ -->
+<div class="screen active" id="sc-splash">
+  <div class="slogo"><i class="fa-solid fa-person-running"></i></div>
+  <h1 class="stit">RunCoach<br><span class="tr">IA</span></h1>
+  <p class="ssub">Tu entrenador personal inteligente</p>
+  <p class="sdesc">Planes de entrenamiento personalizados para corredores, diseñados según tu perfil real. Sin internet, sin cuentas, sin costos.</p>
+  <div class="sacts">
+    <button class="btn bp bfull" onclick="startWizard()"><i class="fa-solid fa-circle-arrow-right"></i> Crear nuevo plan</button>
+    <button class="btn bo bfull" onclick="navTo('history')"><i class="fa-solid fa-list"></i> Ver mis planes</button>
   </div>
-
-  <div class="api-key-section">
-    <div class="api-key-label"><i class="fa-solid fa-lock"></i> API Key de Anthropic</div>
-    <div class="api-key-wrap">
-      <i class="fa-solid fa-key"></i>
-      <input type="password" class="form-control" id="api-key-input" placeholder="sk-ant-..." oninput="saveApiKey(this.value)">
+  <div class="mt8" style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap">
+    <div style="text-align:center;font-size:13px;color:#444">
+      <i class="fa-solid fa-wifi-slash" style="font-size:22px;color:#333;display:block;margin-bottom:6px"></i>100% offline
     </div>
-    <div class="api-key-status" id="api-key-status"></div>
+    <div style="text-align:center;font-size:13px;color:#444">
+      <i class="fa-solid fa-lock" style="font-size:22px;color:#333;display:block;margin-bottom:6px"></i>Sin cuenta
+    </div>
+    <div style="text-align:center;font-size:13px;color:#444">
+      <i class="fa-solid fa-dollar-sign" style="font-size:22px;color:#333;display:block;margin-bottom:6px"></i>Sin costo
+    </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     SCREEN 1 — WIZARD
-═══════════════════════════════════════════════════ -->
-<div class="screen" id="screen-wizard">
-  <div class="container" style="padding-top: 20px;">
-    <div class="progress-wrap">
-      <div class="progress-label">
-        <span id="step-label">Paso 1 de 8</span>
-        <span id="step-name-label">Perfil físico</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="progress-fill" style="width: 12.5%"></div>
-      </div>
+<!-- ══════════════════════════════════════
+     WIZARD
+══════════════════════════════════════ -->
+<div class="screen" id="sc-wizard">
+  <div class="wrap" style="padding-top:20px">
+    <div class="pw">
+      <div class="pl"><span id="steplabel">Paso 1 de 8</span><span id="stepname">Perfil físico</span></div>
+      <div class="pt"><div class="pf" id="pfill" style="width:12.5%"></div></div>
     </div>
 
     <!-- STEP 1 -->
-    <div class="wizard-step" id="step-1">
-      <div class="step-header">
-        <div class="step-icon"><i class="fa-solid fa-user"></i></div>
-        <div>
-          <div class="step-title">Perfil físico básico</div>
-          <div class="step-subtitle">Cuéntanos sobre ti</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Nombre *</label>
-        <input type="text" class="form-control" id="f-nombre" placeholder="Tu nombre" autocomplete="given-name">
-        <div class="form-error" id="e-nombre">Por favor ingresa tu nombre</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Edad *</label>
-        <input type="number" class="form-control" id="f-edad" placeholder="Ej: 35" min="10" max="80">
-        <div class="form-error" id="e-edad">Edad debe estar entre 10 y 80 años</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Sexo biológico *</label>
-        <select class="form-control" id="f-sexo">
-          <option value="">Seleccionar...</option>
-          <option value="Masculino">Masculino</option>
-          <option value="Femenino">Femenino</option>
-        </select>
-        <div class="form-error" id="e-sexo">Selecciona una opción</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Peso (kg) *</label>
-        <input type="number" class="form-control" id="f-peso" placeholder="Ej: 68" min="30" max="200">
-        <div class="form-error" id="e-peso">Por favor ingresa tu peso</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Estatura (cm) *</label>
-        <input type="number" class="form-control" id="f-estatura" placeholder="Ej: 168" min="100" max="230">
-        <div class="form-error" id="e-estatura">Por favor ingresa tu estatura</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">FC en reposo (bpm)</label>
-        <input type="number" class="form-control" id="f-fc-reposo" placeholder="Ej: 58" min="30" max="100">
-        <div class="form-hint">Opcional. Pulsa por 60 segundos en la mañana al despertar.</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">FC máxima (bpm)</label>
-        <input type="number" class="form-control" id="f-fc-max" placeholder="Ej: 182" min="100" max="220">
-        <div class="form-hint">Opcional. Fórmula general: 220 - edad</div>
-      </div>
+    <div class="wstep" id="ws1">
+      <div class="sh"><div class="si"><i class="fa-solid fa-user"></i></div><div><div class="st">Perfil físico básico</div><div class="ss">Cuéntanos sobre ti</div></div></div>
+      <div class="fg"><label class="fl">Nombre *</label><input type="text" class="fc" id="f1" placeholder="Tu nombre" autocomplete="given-name"><div class="ferr" id="e1">Por favor ingresa tu nombre</div></div>
+      <div class="fg"><label class="fl">Edad *</label><input type="number" class="fc" id="f2" placeholder="Ej: 35" min="10" max="80"><div class="ferr" id="e2">Edad entre 10 y 80 años</div></div>
+      <div class="fg"><label class="fl">Sexo biológico *</label><select class="fc" id="f3"><option value="">Seleccionar...</option><option>Masculino</option><option>Femenino</option></select><div class="ferr" id="e3">Selecciona una opción</div></div>
+      <div class="fg"><label class="fl">Peso (kg) *</label><input type="number" class="fc" id="f4" placeholder="Ej: 68" min="30" max="200"><div class="ferr" id="e4">Por favor ingresa tu peso</div></div>
+      <div class="fg"><label class="fl">Estatura (cm) *</label><input type="number" class="fc" id="f5" placeholder="Ej: 168" min="100" max="230"><div class="ferr" id="e5">Por favor ingresa tu estatura</div></div>
+      <div class="fg"><label class="fl">FC en reposo (bpm)</label><input type="number" class="fc" id="f6" placeholder="Ej: 58"><div class="fhint">Opcional — pulsa 60 seg al despertar</div></div>
+      <div class="fg"><label class="fl">FC máxima (bpm)</label><input type="number" class="fc" id="f7" placeholder="Ej: 182"><div class="fhint">Opcional — fórmula general: 220 - edad</div></div>
     </div>
 
     <!-- STEP 2 -->
-    <div class="wizard-step" id="step-2" style="display:none">
-      <div class="step-header">
-        <div class="step-icon"><i class="fa-solid fa-stopwatch"></i></div>
-        <div>
-          <div class="step-title">Nivel actual</div>
-          <div class="step-subtitle">Tu experiencia como corredor</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Experiencia corriendo *</label>
-        <select class="form-control" id="f-experiencia">
-          <option value="">Seleccionar...</option>
-          <option value="Principiante (menos de 6 meses)">Principiante (menos de 6 meses)</option>
-          <option value="6 meses a 1 año">6 meses a 1 año</option>
-          <option value="1 a 3 años">1 a 3 años</option>
-          <option value="Más de 3 años">Más de 3 años</option>
-        </select>
-        <div class="form-error" id="e-experiencia">Selecciona tu nivel de experiencia</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Kilómetros semanales actuales *</label>
-        <input type="number" class="form-control" id="f-km-semanales" placeholder="Ej: 25" min="0" max="300">
-        <div class="form-error" id="e-km-semanales">Ingresa tus km semanales</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Ritmo habitual (entrenamiento suave)</label>
-        <input type="text" class="form-control" id="f-ritmo-habitual" placeholder="Ej: 6:30 min/km">
-        <div class="form-hint">Opcional. El ritmo al que corres cómodo/a</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Distancia máxima completada *</label>
-        <select class="form-control" id="f-distancia-max">
-          <option value="">Seleccionar...</option>
-          <option value="Nunca he corrido formalmente">Nunca he corrido formalmente</option>
-          <option value="Menos de 5K">Menos de 5K</option>
-          <option value="5K">5K</option>
-          <option value="10K">10K</option>
-          <option value="15K">15K</option>
-          <option value="21K (Media Maratón)">21K (Media Maratón)</option>
-          <option value="42K (Maratón)">42K (Maratón)</option>
-        </select>
-        <div class="form-error" id="e-distancia-max">Selecciona una opción</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Mejor tiempo reciente</label>
-        <input type="text" class="form-control" id="f-mejor-tiempo" placeholder="Ej: 5K en 28 minutos">
-        <div class="form-hint">Opcional</div>
-      </div>
+    <div class="wstep" id="ws2" style="display:none">
+      <div class="sh"><div class="si"><i class="fa-solid fa-stopwatch"></i></div><div><div class="st">Nivel actual</div><div class="ss">Tu experiencia como corredor</div></div></div>
+      <div class="fg"><label class="fl">Experiencia corriendo *</label>
+        <select class="fc" id="f8"><option value="">Seleccionar...</option><option value="principiante">Principiante (menos de 6 meses)</option><option value="basico">6 meses a 1 año</option><option value="intermedio">1 a 3 años</option><option value="avanzado">Más de 3 años</option></select>
+        <div class="ferr" id="e8">Selecciona tu nivel</div></div>
+      <div class="fg"><label class="fl">Kilómetros semanales actuales *</label><input type="number" class="fc" id="f9" placeholder="Ej: 25" min="0" max="300"><div class="ferr" id="e9">Ingresa tus km semanales (0 si no corres)</div></div>
+      <div class="fg"><label class="fl">Ritmo habitual de entrenamiento suave</label><input type="text" class="fc" id="f10" placeholder="Ej: 6:30 min/km"><div class="fhint">Opcional</div></div>
+      <div class="fg"><label class="fl">Distancia máxima completada *</label>
+        <select class="fc" id="f11"><option value="">Seleccionar...</option><option>Nunca he corrido formalmente</option><option>Menos de 5K</option><option>5K</option><option>10K</option><option>15K</option><option>21K (Media Maratón)</option><option>42K (Maratón)</option></select>
+        <div class="ferr" id="e11">Selecciona una opción</div></div>
+      <div class="fg"><label class="fl">Mejor tiempo reciente</label><input type="text" class="fc" id="f12" placeholder="Ej: 5K en 28 minutos"><div class="fhint">Opcional</div></div>
     </div>
 
     <!-- STEP 3 -->
-    <div class="wizard-step" id="step-3" style="display:none">
-      <div class="step-header">
-        <div class="step-icon"><i class="fa-solid fa-trophy"></i></div>
-        <div>
-          <div class="step-title">Objetivo de carrera</div>
-          <div class="step-subtitle">¿Hacia dónde vamos?</div>
+    <div class="wstep" id="ws3" style="display:none">
+      <div class="sh"><div class="si"><i class="fa-solid fa-trophy"></i></div><div><div class="st">Objetivo de carrera</div><div class="ss">¿Hacia dónde vamos?</div></div></div>
+      <div class="fg"><label class="fl">Distancia meta *</label>
+        <select class="fc" id="f13" onchange="onDistMeta()"><option value="">Seleccionar...</option><option value="5K">5K</option><option value="10K">10K</option><option value="15K">15K</option><option value="21K">21K - Media Maratón</option><option value="42K">42K - Maratón</option><option value="otra">Otra</option></select>
+        <div class="ferr" id="e13">Selecciona la distancia</div></div>
+      <div class="fg" id="otra-wrap" style="display:none"><label class="fl">Especifica la distancia</label><input type="text" class="fc" id="f13b" placeholder="Ej: 50K trail"></div>
+      <div class="fg"><label class="fl">Objetivo principal *</label>
+        <div class="rg" id="rg-obj">
+          <label class="ro" onclick="selR(this,'rg-obj','terminar')"><input type="radio"><i class="fa-solid fa-flag-checkered tr"></i> Solo terminar</label>
+          <label class="ro" onclick="selR(this,'rg-obj','tiempo'); toggleTiempo()"><input type="radio"><i class="fa-solid fa-stopwatch tr"></i> Tiempo específico</label>
         </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Distancia meta *</label>
-        <select class="form-control" id="f-distancia-meta" onchange="toggleOtraDistancia()">
-          <option value="">Seleccionar...</option>
-          <option value="5K">5K</option>
-          <option value="10K">10K</option>
-          <option value="15K">15K</option>
-          <option value="21K (Media Maratón)">21K - Media Maratón</option>
-          <option value="42K (Maratón)">42K - Maratón</option>
-          <option value="Otra">Otra</option>
-        </select>
-        <div class="form-error" id="e-distancia-meta">Selecciona la distancia</div>
-      </div>
-      <div class="form-group" id="otra-distancia-wrap" style="display:none">
-        <label class="form-label">Especifica la distancia</label>
-        <input type="text" class="form-control" id="f-otra-distancia" placeholder="Ej: 50K trail">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Objetivo principal *</label>
-        <div class="radio-group" id="rg-objetivo">
-          <label class="radio-option" onclick="selectRadio(this,'rg-objetivo','Solo terminar la carrera'); toggleTiempoObjetivo()">
-            <input type="radio" name="objetivo" value="Solo terminar la carrera">
-            <i class="fa-solid fa-flag-checkered text-red"></i> Solo terminar
-          </label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-objetivo','Lograr un tiempo específico'); toggleTiempoObjetivo()">
-            <input type="radio" name="objetivo" value="Lograr un tiempo específico">
-            <i class="fa-solid fa-stopwatch text-red"></i> Tiempo específico
-          </label>
-        </div>
-        <div class="form-error" id="e-objetivo">Selecciona tu objetivo</div>
-      </div>
-      <div class="form-group" id="tiempo-objetivo-wrap" style="display:none">
-        <label class="form-label">Tiempo objetivo</label>
-        <input type="text" class="form-control" id="f-tiempo-objetivo" placeholder="Ej: 1:45:00 para media maratón">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Fecha aproximada de la carrera</label>
-        <input type="date" class="form-control" id="f-fecha-carrera" onchange="calcSemanas()">
-      </div>
-      <div id="semanas-info" style="display:none" class="card card-accent mt-4">
-        <div style="font-size:14px; color: var(--text-muted);">Tiempo disponible</div>
-        <div id="semanas-text" style="font-size: 24px; font-weight: 800; color: var(--red);"></div>
+        <div class="ferr" id="e-obj">Selecciona tu objetivo</div></div>
+      <div class="fg" id="tobj-wrap" style="display:none"><label class="fl">Tiempo objetivo</label><input type="text" class="fc" id="f14" placeholder="Ej: 1:45:00 para media maratón"></div>
+      <div class="fg"><label class="fl">Fecha de la carrera</label><input type="date" class="fc" id="f15" onchange="calcSem()"></div>
+      <div id="sem-info" style="display:none" class="card cacc mt4">
+        <div style="font-size:14px;color:var(--muted)">Tiempo disponible</div>
+        <div id="sem-txt" style="font-size:24px;font-weight:800;color:var(--red)"></div>
       </div>
     </div>
 
     <!-- STEP 4 -->
-    <div class="wizard-step" id="step-4" style="display:none">
-      <div class="step-header">
-        <div class="step-icon"><i class="fa-solid fa-calendar-week"></i></div>
-        <div>
-          <div class="step-title">Disponibilidad semanal</div>
-          <div class="step-subtitle">¿Cuándo y cuánto puedes entrenar?</div>
+    <div class="wstep" id="ws4" style="display:none">
+      <div class="sh"><div class="si"><i class="fa-solid fa-calendar-week"></i></div><div><div class="st">Disponibilidad semanal</div><div class="ss">¿Cuándo y cuánto puedes entrenar?</div></div></div>
+      <div class="fg"><label class="fl">Días disponibles * (mín. 2)</label>
+        <div class="dts" id="dts">
+          <button type="button" class="dt" data-day="Lunes" onclick="togDay(this)">L</button>
+          <button type="button" class="dt" data-day="Martes" onclick="togDay(this)">M</button>
+          <button type="button" class="dt" data-day="Miércoles" onclick="togDay(this)">X</button>
+          <button type="button" class="dt" data-day="Jueves" onclick="togDay(this)">J</button>
+          <button type="button" class="dt" data-day="Viernes" onclick="togDay(this)">V</button>
+          <button type="button" class="dt" data-day="Sábado" onclick="togDay(this)">S</button>
+          <button type="button" class="dt" data-day="Domingo" onclick="togDay(this)">D</button>
         </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Días disponibles * (selecciona al menos 2)</label>
-        <div class="day-toggles" id="day-toggles">
-          <button type="button" class="day-toggle" data-day="Lunes" onclick="toggleDay(this)">L</button>
-          <button type="button" class="day-toggle" data-day="Martes" onclick="toggleDay(this)">M</button>
-          <button type="button" class="day-toggle" data-day="Miércoles" onclick="toggleDay(this)">X</button>
-          <button type="button" class="day-toggle" data-day="Jueves" onclick="toggleDay(this)">J</button>
-          <button type="button" class="day-toggle" data-day="Viernes" onclick="toggleDay(this)">V</button>
-          <button type="button" class="day-toggle" data-day="Sábado" onclick="toggleDay(this)">S</button>
-          <button type="button" class="day-toggle" data-day="Domingo" onclick="toggleDay(this)">D</button>
+        <div class="ferr" id="e-dias">Selecciona al menos 2 días</div></div>
+      <div class="fg"><label class="fl">Duración máxima por sesión *</label>
+        <select class="fc" id="f16"><option value="">Seleccionar...</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">1 hora</option><option value="90">1 hora 30 minutos</option><option value="120">2 horas o más</option></select>
+        <div class="ferr" id="e16">Selecciona la duración</div></div>
+      <div class="fg"><label class="fl">Horario preferido *</label>
+        <div class="rg" id="rg-hor">
+          <label class="ro" onclick="selR(this,'rg-hor','Mañana')"><input type="radio">🌅 Mañana</label>
+          <label class="ro" onclick="selR(this,'rg-hor','Tarde')"><input type="radio">☀️ Tarde</label>
+          <label class="ro" onclick="selR(this,'rg-hor','Noche')"><input type="radio">🌙 Noche</label>
+          <label class="ro" onclick="selR(this,'rg-hor','Indiferente')"><input type="radio">🔄 Indiferente</label>
         </div>
-        <div class="form-error" id="e-dias">Selecciona al menos 2 días</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Duración máxima por sesión *</label>
-        <select class="form-control" id="f-duracion-sesion">
-          <option value="">Seleccionar...</option>
-          <option value="30 minutos">30 minutos</option>
-          <option value="45 minutos">45 minutos</option>
-          <option value="1 hora">1 hora</option>
-          <option value="1 hora 30 minutos">1 hora 30 minutos</option>
-          <option value="2 horas o más">2 horas o más</option>
-        </select>
-        <div class="form-error" id="e-duracion-sesion">Selecciona la duración</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Horario preferido *</label>
-        <div class="radio-group" id="rg-horario">
-          <label class="radio-option" onclick="selectRadio(this,'rg-horario','Mañana')"><input type="radio">🌅 Mañana</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-horario','Tarde')"><input type="radio">☀️ Tarde</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-horario','Noche')"><input type="radio">🌙 Noche</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-horario','Indiferente')"><input type="radio">🔄 Indiferente</label>
-        </div>
-        <div class="form-error" id="e-horario">Selecciona un horario</div>
-      </div>
+        <div class="ferr" id="e-hor">Selecciona un horario</div></div>
     </div>
 
     <!-- STEP 5 -->
-    <div class="wizard-step" id="step-5" style="display:none">
-      <div class="step-header">
-        <div class="step-icon"><i class="fa-solid fa-heart-pulse"></i></div>
-        <div>
-          <div class="step-title">Salud y lesiones</div>
-          <div class="step-subtitle">Tu bienestar es lo primero</div>
-        </div>
-      </div>
-      <div class="warning-box mb-4">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <span>RunCoach IA no reemplaza la evaluación de un médico deportivo. Consulta a un profesional antes de iniciar cualquier plan de entrenamiento.</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">¿Tienes alguna lesión actual o crónica? *</label>
-        <div class="radio-group" id="rg-lesion">
-          <label class="radio-option" onclick="selectRadio(this,'rg-lesion','Sí'); toggleLesionDetail()"><input type="radio">Sí</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-lesion','No'); toggleLesionDetail()"><input type="radio">No</label>
-        </div>
-        <div class="form-error" id="e-lesion">Selecciona una opción</div>
-      </div>
-      <div class="form-group" id="lesion-detail-wrap" style="display:none">
-        <label class="form-label">Describe la lesión</label>
-        <input type="text" class="form-control" id="f-lesion-desc" placeholder="Ej: Tendinitis aquilea crónica derecha">
-      </div>
-      <div class="form-group">
-        <label class="form-label">¿Has tenido cirugías relacionadas con el movimiento? *</label>
-        <div class="radio-group" id="rg-cirugia">
-          <label class="radio-option" onclick="selectRadio(this,'rg-cirugia','Sí'); toggleCirugiaDetail()"><input type="radio">Sí</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-cirugia','No'); toggleCirugiaDetail()"><input type="radio">No</label>
-        </div>
-        <div class="form-error" id="e-cirugia">Selecciona una opción</div>
-      </div>
-      <div class="form-group" id="cirugia-detail-wrap" style="display:none">
-        <label class="form-label">Describe la cirugía</label>
-        <input type="text" class="form-control" id="f-cirugia-desc" placeholder="Ej: Meniscectomía rodilla izquierda (2022)">
-      </div>
-      <div class="form-group">
-        <label class="form-label">¿Tienes autorización médica para entrenar? *</label>
-        <div class="radio-group" id="rg-autorizacion">
-          <label class="radio-option" onclick="selectRadio(this,'rg-autorizacion','Sí')"><input type="radio">Sí</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-autorizacion','No')"><input type="radio">No</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-autorizacion','No he consultado')"><input type="radio">No he consultado</label>
-        </div>
-        <div class="form-error" id="e-autorizacion">Selecciona una opción</div>
-      </div>
+    <div class="wstep" id="ws5" style="display:none">
+      <div class="sh"><div class="si"><i class="fa-solid fa-heart-pulse"></i></div><div><div class="st">Salud y lesiones</div><div class="ss">Tu bienestar es lo primero</div></div></div>
+      <div class="wbox mb4"><i class="fa-solid fa-triangle-exclamation"></i><span>RunCoach IA no reemplaza la evaluación de un médico deportivo. Consulta a un profesional antes de comenzar.</span></div>
+      <div class="fg"><label class="fl">¿Tienes alguna lesión actual o crónica? *</label>
+        <div class="rg" id="rg-les"><label class="ro" onclick="selR(this,'rg-les','si'); togLes()"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-les','no'); togLes()"><input type="radio">No</label></div>
+        <div class="ferr" id="e-les">Selecciona una opción</div></div>
+      <div class="fg" id="les-det" style="display:none"><label class="fl">Describe la lesión</label><input type="text" class="fc" id="f17" placeholder="Ej: Tendinitis aquilea crónica"></div>
+      <div class="fg"><label class="fl">¿Has tenido cirugías relacionadas con el movimiento? *</label>
+        <div class="rg" id="rg-cir"><label class="ro" onclick="selR(this,'rg-cir','si'); togCir()"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-cir','no'); togCir()"><input type="radio">No</label></div>
+        <div class="ferr" id="e-cir">Selecciona una opción</div></div>
+      <div class="fg" id="cir-det" style="display:none"><label class="fl">Describe la cirugía</label><input type="text" class="fc" id="f18" placeholder="Ej: Meniscectomía rodilla izq. (2022)"></div>
+      <div class="fg"><label class="fl">¿Tienes autorización médica para entrenar? *</label>
+        <div class="rg" id="rg-aut"><label class="ro" onclick="selR(this,'rg-aut','si')"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-aut','no')"><input type="radio">No</label><label class="ro" onclick="selR(this,'rg-aut','nc')"><input type="radio">No he consultado</label></div>
+        <div class="ferr" id="e-aut">Selecciona una opción</div></div>
     </div>
 
     <!-- STEP 6 -->
-    <div class="wizard-step" id="step-6" style="display:none">
-      <div class="step-header">
-        <div class="step-icon"><i class="fa-solid fa-mountain-sun"></i></div>
-        <div>
-          <div class="step-title">Entorno y recursos</div>
-          <div class="step-subtitle">Tu ambiente de entrenamiento</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Superficie habitual (puedes seleccionar varias)</label>
-        <div class="check-group" id="cg-superficie">
-          <label class="check-option" onclick="toggleCheck(this,'cg-superficie')"><input type="checkbox">🛣️ Asfalto</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-superficie')"><input type="checkbox">🌿 Tierra</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-superficie')"><input type="checkbox">🏟️ Pista</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-superficie')"><input type="checkbox">🏃 Cinta</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-superficie')"><input type="checkbox">🔄 Mixto</label>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Topografía de tu zona *</label>
-        <div class="radio-group" id="rg-topografia">
-          <label class="radio-option" onclick="selectRadio(this,'rg-topografia','Plano')"><input type="radio">⬛ Plano</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-topografia','Ligeramente ondulado')"><input type="radio">〰️ Ondulado</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-topografia','Montañoso')"><input type="radio">⛰️ Montañoso</label>
-        </div>
-        <div class="form-error" id="e-topografia">Selecciona una opción</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">¿Tienes acceso a gimnasio? *</label>
-        <div class="radio-group" id="rg-gimnasio">
-          <label class="radio-option" onclick="selectRadio(this,'rg-gimnasio','Sí')"><input type="radio">Sí</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-gimnasio','No')"><input type="radio">No</label>
-        </div>
-        <div class="form-error" id="e-gimnasio">Selecciona una opción</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Clima habitual *</label>
-        <select class="form-control" id="f-clima">
-          <option value="">Seleccionar...</option>
-          <option value="Tropical/Caluroso">Tropical / Caluroso</option>
-          <option value="Templado">Templado</option>
-          <option value="Frío">Frío</option>
-          <option value="Variable">Variable</option>
-        </select>
-        <div class="form-error" id="e-clima">Selecciona el clima</div>
-      </div>
+    <div class="wstep" id="ws6" style="display:none">
+      <div class="sh"><div class="si"><i class="fa-solid fa-mountain-sun"></i></div><div><div class="st">Entorno y recursos</div><div class="ss">Tu ambiente de entrenamiento</div></div></div>
+      <div class="fg"><label class="fl">Superficie habitual</label>
+        <div class="cg" id="cg-sup">
+          <label class="co" onclick="togC(this)"><input type="checkbox">🛣️ Asfalto</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🌿 Tierra</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🏟️ Pista</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🏃 Cinta</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🔄 Mixto</label>
+        </div></div>
+      <div class="fg"><label class="fl">Topografía de tu zona *</label>
+        <div class="rg" id="rg-top"><label class="ro" onclick="selR(this,'rg-top','plano')"><input type="radio">⬛ Plano</label><label class="ro" onclick="selR(this,'rg-top','ondulado')"><input type="radio">〰️ Ondulado</label><label class="ro" onclick="selR(this,'rg-top','montañoso')"><input type="radio">⛰️ Montañoso</label></div>
+        <div class="ferr" id="e-top">Selecciona la topografía</div></div>
+      <div class="fg"><label class="fl">¿Tienes acceso a gimnasio? *</label>
+        <div class="rg" id="rg-gym"><label class="ro" onclick="selR(this,'rg-gym','si')"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-gym','no')"><input type="radio">No</label></div>
+        <div class="ferr" id="e-gym">Selecciona una opción</div></div>
+      <div class="fg"><label class="fl">Clima habitual *</label>
+        <select class="fc" id="f19"><option value="">Seleccionar...</option><option value="caluroso">Tropical / Caluroso</option><option value="templado">Templado</option><option value="frio">Frío</option><option value="variable">Variable</option></select>
+        <div class="ferr" id="e19">Selecciona el clima</div></div>
     </div>
 
     <!-- STEP 7 -->
-    <div class="wizard-step" id="step-7" style="display:none">
-      <div class="step-header">
-        <div class="step-icon"><i class="fa-solid fa-bed"></i></div>
-        <div>
-          <div class="step-title">Recuperación y estilo de vida</div>
-          <div class="step-subtitle">El descanso también entrena</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Horas de sueño promedio por noche</label>
-        <div class="slider-wrap" style="padding-top: 28px;">
-          <span class="slider-value" id="sueno-val">7 hrs</span>
-          <input type="range" min="4" max="10" value="7" id="f-sueno" oninput="document.getElementById('sueno-val').textContent=this.value+' hrs'">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Nivel de estrés general *</label>
-        <div class="radio-group" id="rg-estres">
-          <label class="radio-option" onclick="selectRadio(this,'rg-estres','Bajo')"><input type="radio">😌 Bajo</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-estres','Medio')"><input type="radio">😐 Medio</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-estres','Alto')"><input type="radio">😰 Alto</label>
-        </div>
-        <div class="form-error" id="e-estres">Selecciona tu nivel de estrés</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Otras actividades físicas</label>
-        <div class="check-group" id="cg-actividades">
-          <label class="check-option" onclick="toggleCheck(this,'cg-actividades')"><input type="checkbox">🚴 Ciclismo</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-actividades')"><input type="checkbox">🏊 Natación</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-actividades')"><input type="checkbox">🧘 Yoga</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-actividades')"><input type="checkbox">💪 Pesas</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-actividades')"><input type="checkbox">❌ Ninguno</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-actividades')"><input type="checkbox">➕ Otro</label>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Alimentación general *</label>
-        <select class="form-control" id="f-alimentacion">
-          <option value="">Seleccionar...</option>
-          <option value="Omnívora">Omnívora</option>
-          <option value="Vegetariana">Vegetariana</option>
-          <option value="Vegana">Vegana</option>
-          <option value="Sin restricciones especiales">Sin restricciones especiales</option>
-        </select>
-        <div class="form-error" id="e-alimentacion">Selecciona una opción</div>
-      </div>
+    <div class="wstep" id="ws7" style="display:none">
+      <div class="sh"><div class="si"><i class="fa-solid fa-bed"></i></div><div><div class="st">Recuperación y estilo de vida</div><div class="ss">El descanso también entrena</div></div></div>
+      <div class="fg"><label class="fl">Horas de sueño por noche</label>
+        <div class="sw" style="padding-top:28px"><span class="sv" id="sv">7 hrs</span><input type="range" min="4" max="10" value="7" id="f20" oninput="document.getElementById('sv').textContent=this.value+' hrs'"></div></div>
+      <div class="fg"><label class="fl">Nivel de estrés general *</label>
+        <div class="rg" id="rg-est"><label class="ro" onclick="selR(this,'rg-est','bajo')"><input type="radio">😌 Bajo</label><label class="ro" onclick="selR(this,'rg-est','medio')"><input type="radio">😐 Medio</label><label class="ro" onclick="selR(this,'rg-est','alto')"><input type="radio">😰 Alto</label></div>
+        <div class="ferr" id="e-est">Selecciona tu nivel de estrés</div></div>
+      <div class="fg"><label class="fl">Otras actividades físicas</label>
+        <div class="cg" id="cg-act">
+          <label class="co" onclick="togC(this)"><input type="checkbox">🚴 Ciclismo</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🏊 Natación</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🧘 Yoga</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">💪 Pesas</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">❌ Ninguno</label>
+        </div></div>
+      <div class="fg"><label class="fl">Alimentación general *</label>
+        <select class="fc" id="f21"><option value="">Seleccionar...</option><option>Omnívora</option><option>Vegetariana</option><option>Vegana</option><option>Sin restricciones especiales</option></select>
+        <div class="ferr" id="e21">Selecciona una opción</div></div>
     </div>
 
     <!-- STEP 8 -->
-    <div class="wizard-step" id="step-8" style="display:none">
-      <div class="step-header">
-        <div class="step-icon"><i class="fa-solid fa-watch"></i></div>
-        <div>
-          <div class="step-title">Tecnología y nombre del plan</div>
-          <div class="step-subtitle">Últimos detalles</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">¿Tienes reloj GPS o dispositivo deportivo? *</label>
-        <div class="radio-group" id="rg-reloj">
-          <label class="radio-option" onclick="selectRadio(this,'rg-reloj','Sí')"><input type="radio">Sí</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-reloj','No')"><input type="radio">No</label>
-        </div>
-        <div class="form-error" id="e-reloj">Selecciona una opción</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">¿Usas monitor de frecuencia cardíaca? *</label>
-        <div class="radio-group" id="rg-monitor-fc">
-          <label class="radio-option" onclick="selectRadio(this,'rg-monitor-fc','Sí, de muñeca')"><input type="radio">⌚ Muñeca</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-monitor-fc','Sí, de pecho')"><input type="radio">💓 Pecho</label>
-          <label class="radio-option" onclick="selectRadio(this,'rg-monitor-fc','No')"><input type="radio">No uso</label>
-        </div>
-        <div class="form-error" id="e-monitor-fc">Selecciona una opción</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Apps que usas</label>
-        <div class="check-group" id="cg-apps">
-          <label class="check-option" onclick="toggleCheck(this,'cg-apps')"><input type="checkbox">Strava</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-apps')"><input type="checkbox">Garmin</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-apps')"><input type="checkbox">Nike Run</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-apps')"><input type="checkbox">Adidas</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-apps')"><input type="checkbox">Ninguna</label>
-          <label class="check-option" onclick="toggleCheck(this,'cg-apps')"><input type="checkbox">Otra</label>
-        </div>
-      </div>
+    <div class="wstep" id="ws8" style="display:none">
+      <div class="sh"><div class="si"><i class="fa-solid fa-watch"></i></div><div><div class="st">Tecnología y nombre del plan</div><div class="ss">Últimos detalles</div></div></div>
+      <div class="fg"><label class="fl">¿Tienes reloj GPS? *</label>
+        <div class="rg" id="rg-rel"><label class="ro" onclick="selR(this,'rg-rel','si')"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-rel','no')"><input type="radio">No</label></div>
+        <div class="ferr" id="e-rel">Selecciona una opción</div></div>
+      <div class="fg"><label class="fl">¿Usas monitor de FC? *</label>
+        <div class="rg" id="rg-mfc"><label class="ro" onclick="selR(this,'rg-mfc','muñeca')"><input type="radio">⌚ Muñeca</label><label class="ro" onclick="selR(this,'rg-mfc','pecho')"><input type="radio">💓 Pecho</label><label class="ro" onclick="selR(this,'rg-mfc','no')"><input type="radio">No uso</label></div>
+        <div class="ferr" id="e-mfc">Selecciona una opción</div></div>
+      <div class="fg"><label class="fl">Apps que usas</label>
+        <div class="cg" id="cg-apps">
+          <label class="co" onclick="togC(this)"><input type="checkbox">Strava</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">Garmin</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">Nike Run</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">Adidas</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">Ninguna</label>
+        </div></div>
       <div class="divider"></div>
-      <div class="form-group">
-        <label class="form-label">Nombre para este plan *</label>
-        <input type="text" class="form-control" id="f-nombre-plan" placeholder="Ej: Mi plan Maratón SD 2025">
-        <div class="form-hint">Este nombre aparecerá en tu historial de planes</div>
-        <div class="form-error" id="e-nombre-plan">Ingresa un nombre para el plan</div>
-      </div>
-
-      <div class="card card-accent mt-4" style="background: rgba(192,57,43,0.08);">
-        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Resumen del plan</div>
-        <div id="resumen-plan" style="font-size: 14px; line-height: 1.8;"></div>
+      <div class="fg"><label class="fl">Nombre para este plan *</label><input type="text" class="fc" id="f22" placeholder="Ej: Mi plan Maratón SD 2025"><div class="fhint">Aparecerá en tu historial</div><div class="ferr" id="e22">Ingresa un nombre para el plan</div></div>
+      <div class="card cacc mt4" style="background:rgba(192,57,43,.08)">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Resumen</div>
+        <div id="resumen" style="font-size:14px;line-height:1.8"></div>
       </div>
     </div>
 
-    <!-- NAV BUTTONS -->
-    <div class="step-nav">
-      <button class="btn btn-outline" id="btn-prev" onclick="prevStep()" style="display:none">
-        <i class="fa-solid fa-circle-arrow-left"></i> Anterior
-      </button>
-      <button class="btn btn-primary" id="btn-next" onclick="nextStep()">
-        Siguiente <i class="fa-solid fa-circle-arrow-right"></i>
-      </button>
-      <button class="btn btn-primary" id="btn-generate" onclick="generatePlan()" style="display:none; background: var(--success);">
-        <i class="fa-solid fa-robot"></i> Generar mi plan con IA
-      </button>
+    <div class="snav">
+      <button class="btn bo" id="bprev" onclick="prevStep()" style="display:none"><i class="fa-solid fa-circle-arrow-left"></i> Anterior</button>
+      <button class="btn bp" id="bnext" onclick="nextStep()">Siguiente <i class="fa-solid fa-circle-arrow-right"></i></button>
+      <button class="btn bfull" id="bgen" onclick="buildPlan()" style="display:none;background:var(--ok)"><i class="fa-solid fa-dumbbell"></i> Generar mi plan</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     SCREEN 2 — LOADING
-═══════════════════════════════════════════════════ -->
-<div class="screen" id="screen-loading">
-  <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 20px; text-align: center;">
-    <div class="loading-icon"><i class="fa-solid fa-robot"></i></div>
-    <h2 style="font-size: 32px; margin: 20px 0 8px;">Generando tu plan</h2>
-    <p class="text-muted" style="margin-bottom: 24px;">Esto puede tomar unos segundos...</p>
-    <div class="loading-bar" style="width: 100%; max-width: 400px;">
-      <div class="loading-bar-fill"></div>
-    </div>
-    <p class="typing-text" id="loading-text">Analizando tu perfil...</p>
+<!-- ══════════════════════════════════════
+     LOADING
+══════════════════════════════════════ -->
+<div class="screen" id="sc-loading">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;text-align:center">
+    <div class="lic"><i class="fa-solid fa-person-running"></i></div>
+    <h2 style="font-size:32px;margin:20px 0 8px">Diseñando tu plan</h2>
+    <p class="tm" style="margin-bottom:24px">Aplicando principios de entrenamiento...</p>
+    <div class="lbar" style="width:100%;max-width:400px"><div class="lbf"></div></div>
+    <p class="ltxt" id="ltxt">Analizando tu perfil...</p>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     SCREEN 3 — PLAN
-═══════════════════════════════════════════════════ -->
-<div class="screen" id="screen-plan">
-  <div class="container" style="padding-top: 20px;">
-    <div class="plan-header">
-      <div style="display:flex; align-items:center; gap: 12px; margin-bottom: 8px;">
-        <i class="fa-solid fa-trophy" style="font-size: 28px; color: var(--red);"></i>
-        <div class="plan-name" id="plan-display-name">Plan de Entrenamiento</div>
+<!-- ══════════════════════════════════════
+     PLAN
+══════════════════════════════════════ -->
+<div class="screen" id="sc-plan">
+  <div class="wrap" style="padding-top:20px">
+    <div class="ph">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <i class="fa-solid fa-trophy" style="font-size:28px;color:var(--red)"></i>
+        <div class="pn" id="pname">Plan de Entrenamiento</div>
       </div>
-      <div class="plan-meta" id="plan-display-meta"></div>
+      <div class="pm" id="pmeta"></div>
     </div>
-
-    <div id="plan-content"></div>
-
-    <div class="consejos-section" id="consejos-section" style="display:none">
-      <h3 class="section-title" style="font-size: 22px; margin-bottom: 16px;"><i class="fa-solid fa-lightbulb"></i> Consejos generales</h3>
-      <ul class="tips-list" id="consejos-list"></ul>
+    <div id="pcontent"></div>
+    <div class="csec" id="csec" style="display:none">
+      <h3 style="font-size:22px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-lightbulb tr"></i> Consejos generales</h3>
+      <ul class="tips" id="clist"></ul>
     </div>
-
-    <div class="step-nav mt-8">
-      <button class="btn btn-primary btn-full" id="btn-save-plan" onclick="savePlan()">
-        <i class="fa-solid fa-floppy-disk"></i> Guardar plan
-      </button>
+    <div class="snav mt8">
+      <button class="btn bp bfull" id="bsave" onclick="savePlan()"><i class="fa-solid fa-floppy-disk"></i> Guardar plan</button>
     </div>
-    <div style="text-align: center; margin-top: 14px;">
-      <button class="btn btn-outline-red" onclick="navTo('splash')">
-        <i class="fa-solid fa-circle-arrow-left"></i> Volver al inicio
-      </button>
+    <div style="text-align:center;margin-top:14px">
+      <button class="btn bor" onclick="navTo('splash')"><i class="fa-solid fa-circle-arrow-left"></i> Volver al inicio</button>
     </div>
-    <div style="height: 20px;"></div>
+    <div style="height:20px"></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     SCREEN 4 — HISTORY
-═══════════════════════════════════════════════════ -->
-<div class="screen" id="screen-history">
-  <div class="container" style="padding-top: 20px;">
-    <h2 class="section-title"><i class="fa-solid fa-list"></i> Mis Planes Guardados</h2>
-    <div id="history-list"></div>
+<!-- ══════════════════════════════════════
+     HISTORY
+══════════════════════════════════════ -->
+<div class="screen" id="sc-history">
+  <div class="wrap" style="padding-top:20px">
+    <h2 class="sectit"><i class="fa-solid fa-list"></i> Mis Planes Guardados</h2>
+    <div id="hlist"></div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  STATE
-// ═══════════════════════════════════════════════════
-let currentStep = 1;
-const TOTAL_STEPS = 8;
-let currentPlanData = null;   // plan text from Claude
-let currentFormData = null;   // wizard data
-let modalCallback = null;
+// ═══════════════════════════════════════════════════════════
+let cStep = 1;
+const STEPS = 8;
+const SNAMES = ['Perfil físico','Nivel actual','Objetivo','Disponibilidad','Salud','Entorno','Recuperación','Tecnología'];
+let planObj = null;   // generated plan object
+let formData = null;
+let modalCb = null;
+let lInterval = null;
 
-// ═══════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════
-window.addEventListener('load', () => {
-  // Load API key
-  const key = localStorage.getItem('runcoach_api_key');
-  if (key) {
-    document.getElementById('api-key-input').value = key;
-    updateApiKeyStatus(key);
-  }
-  // Restore wizard session
-  const savedWizard = sessionStorage.getItem('runcoach_wizard');
-  if (savedWizard) {
-    try { restoreWizardData(JSON.parse(savedWizard)); } catch(e) {}
-  }
-});
-
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  NAVIGATION
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
+  document.getElementById('sc-' + id).classList.add('active');
   window.scrollTo(0, 0);
-  // Update nav
-  const nav = document.getElementById('bottom-nav');
-  if (id === 'splash') {
-    nav.classList.remove('visible');
-  } else {
-    nav.classList.add('visible');
-  }
-  // Update active nav btn
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const navMap = { splash: 'nav-inicio', wizard: 'nav-nuevo', history: 'nav-historial' };
-  if (navMap[id]) document.getElementById(navMap[id])?.classList.add('active');
+  const bnav = document.getElementById('bnav');
+  bnav.classList.toggle('on', id !== 'splash' && id !== 'loading');
+  ['ini','new','his'].forEach(k => document.getElementById('nb-'+k).classList.remove('act'));
+  const nmap = {splash:'ini', wizard:'new', history:'his', plan:'his'};
+  if (nmap[id]) document.getElementById('nb-'+nmap[id]).classList.add('act');
 }
-
 function navTo(id) {
-  if (id === 'wizard') { startWizard(); return; }
-  if (id === 'history') { renderHistory(); }
+  if (id === 'history') renderHistory();
   showScreen(id);
 }
+function startWizard() { cStep = 1; renderStep(1); showScreen('wizard'); }
 
-function startWizard() {
-  currentStep = 1;
-  renderStep(1);
-  showScreen('wizard');
+// ═══════════════════════════════════════════════════════════
+//  WIZARD
+// ═══════════════════════════════════════════════════════════
+function renderStep(s) {
+  document.querySelectorAll('.wstep').forEach((el, i) => el.style.display = i + 1 === s ? 'block' : 'none');
+  const pct = Math.round(s / STEPS * 100);
+  document.getElementById('pfill').style.width = pct + '%';
+  document.getElementById('steplabel').textContent = `Paso ${s} de ${STEPS}`;
+  document.getElementById('stepname').textContent = SNAMES[s - 1];
+  document.getElementById('bprev').style.display = s > 1 ? 'flex' : 'none';
+  document.getElementById('bnext').style.display = s < STEPS ? 'flex' : 'none';
+  document.getElementById('bgen').style.display = s === STEPS ? 'flex' : 'none';
+  if (s === STEPS) updRes();
 }
+function nextStep() { if (valStep(cStep)) { cStep++; renderStep(cStep); } }
+function prevStep() { if (cStep > 1) { cStep--; renderStep(cStep); } }
 
-// ═══════════════════════════════════════════════════
-//  API KEY
-// ═══════════════════════════════════════════════════
-function saveApiKey(val) {
-  if (val.trim()) {
-    localStorage.setItem('runcoach_api_key', val.trim());
-    updateApiKeyStatus(val.trim());
-  }
-}
-function updateApiKeyStatus(key) {
-  const el = document.getElementById('api-key-status');
-  if (key && key.startsWith('sk-ant-')) {
-    el.className = 'api-key-status ok';
-    el.innerHTML = '<i class="fa-solid fa-circle-check"></i> API Key guardada';
-  } else if (key) {
-    el.className = 'api-key-status missing';
-    el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Verifica que la clave sea correcta';
-  } else {
-    el.className = 'api-key-status missing';
-    el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> API Key requerida para generar planes';
-  }
-}
-
-// ═══════════════════════════════════════════════════
-//  WIZARD NAVIGATION
-// ═══════════════════════════════════════════════════
-const STEP_NAMES = ['Perfil físico','Nivel actual','Objetivo','Disponibilidad','Salud','Entorno','Recuperación','Tecnología'];
-
-function renderStep(step) {
-  document.querySelectorAll('.wizard-step').forEach((s, i) => {
-    s.style.display = (i + 1 === step) ? 'block' : 'none';
-    if (i + 1 === step) s.style.animation = 'fadeInUp 0.3s ease';
-  });
-  const pct = Math.round((step / TOTAL_STEPS) * 100);
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('step-label').textContent = `Paso ${step} de ${TOTAL_STEPS}`;
-  document.getElementById('step-name-label').textContent = STEP_NAMES[step - 1];
-  document.getElementById('btn-prev').style.display = step > 1 ? 'flex' : 'none';
-  document.getElementById('btn-next').style.display = step < TOTAL_STEPS ? 'flex' : 'none';
-  document.getElementById('btn-generate').style.display = step === TOTAL_STEPS ? 'flex' : 'none';
-  if (step === TOTAL_STEPS) updateResumen();
-  saveWizardSession();
-}
-
-function nextStep() {
-  if (!validateStep(currentStep)) return;
-  if (currentStep < TOTAL_STEPS) {
-    currentStep++;
-    renderStep(currentStep);
-  }
-}
-
-function prevStep() {
-  if (currentStep > 1) {
-    currentStep--;
-    renderStep(currentStep);
-  }
-}
-
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  VALIDATION
-// ═══════════════════════════════════════════════════
-function validateStep(step) {
-  let valid = true;
-  const req = (id, errId, check) => {
-    const el = document.getElementById(id);
-    const err = document.getElementById(errId);
-    if (!el) return;
-    const ok = check ? check(el) : (el.value && el.value.trim() !== '');
-    el.classList.toggle('error', !ok);
-    err && err.classList.toggle('show', !ok);
-    if (!ok) valid = false;
-  };
-  const reqRadio = (groupId, errId) => {
-    const selected = document.querySelector(`#${groupId} .radio-option.selected`);
-    const err = document.getElementById(errId);
-    if (!selected) { err && err.classList.add('show'); valid = false; }
-    else { err && err.classList.remove('show'); }
-  };
-
-  if (step === 1) {
-    req('f-nombre', 'e-nombre');
-    req('f-edad', 'e-edad', el => el.value && +el.value >= 10 && +el.value <= 80);
-    req('f-sexo', 'e-sexo');
-    req('f-peso', 'e-peso');
-    req('f-estatura', 'e-estatura');
+// ═══════════════════════════════════════════════════════════
+function req(id, eid, fn) {
+  const el = document.getElementById(id);
+  const ok = fn ? fn(el) : (el.value && el.value.trim());
+  el.classList.toggle('err', !ok);
+  const er = document.getElementById(eid);
+  if (er) er.classList.toggle('on', !ok);
+  return !!ok;
+}
+function reqR(gid, eid) {
+  const ok = !!document.querySelector(`#${gid} .ro.sel`);
+  const er = document.getElementById(eid);
+  if (er) er.classList.toggle('on', !ok);
+  return ok;
+}
+function valStep(s) {
+  let ok = true;
+  const c = v => { if (!v) ok = false; return v; };
+  if (s === 1) {
+    c(req('f1','e1')); c(req('f2','e2',el=>el.value&&+el.value>=10&&+el.value<=80));
+    c(req('f3','e3')); c(req('f4','e4')); c(req('f5','e5'));
   }
-  if (step === 2) {
-    req('f-experiencia', 'e-experiencia');
-    req('f-km-semanales', 'e-km-semanales', el => el.value !== '');
-    req('f-distancia-max', 'e-distancia-max');
+  if (s === 2) { c(req('f8','e8')); c(req('f9','e9',el=>el.value!=='')); c(req('f11','e11')); }
+  if (s === 3) { c(req('f13','e13')); c(reqR('rg-obj','e-obj')); }
+  if (s === 4) {
+    const days = getDays();
+    const ed = document.getElementById('e-dias');
+    if (days.length < 2) { ed.classList.add('on'); ok = false; } else ed.classList.remove('on');
+    c(req('f16','e16')); c(reqR('rg-hor','e-hor'));
   }
-  if (step === 3) {
-    req('f-distancia-meta', 'e-distancia-meta');
-    reqRadio('rg-objetivo', 'e-objetivo');
-  }
-  if (step === 4) {
-    const days = getSelectedDays();
-    const errDias = document.getElementById('e-dias');
-    if (days.length < 2) { errDias.classList.add('show'); valid = false; }
-    else errDias.classList.remove('show');
-    req('f-duracion-sesion', 'e-duracion-sesion');
-    reqRadio('rg-horario', 'e-horario');
-  }
-  if (step === 5) {
-    reqRadio('rg-lesion', 'e-lesion');
-    reqRadio('rg-cirugia', 'e-cirugia');
-    reqRadio('rg-autorizacion', 'e-autorizacion');
-  }
-  if (step === 6) {
-    reqRadio('rg-topografia', 'e-topografia');
-    reqRadio('rg-gimnasio', 'e-gimnasio');
-    req('f-clima', 'e-clima');
-  }
-  if (step === 7) {
-    reqRadio('rg-estres', 'e-estres');
-    req('f-alimentacion', 'e-alimentacion');
-  }
-  if (step === 8) {
-    reqRadio('rg-reloj', 'e-reloj');
-    reqRadio('rg-monitor-fc', 'e-monitor-fc');
-    req('f-nombre-plan', 'e-nombre-plan');
-  }
-  return valid;
+  if (s === 5) { c(reqR('rg-les','e-les')); c(reqR('rg-cir','e-cir')); c(reqR('rg-aut','e-aut')); }
+  if (s === 6) { c(reqR('rg-top','e-top')); c(reqR('rg-gym','e-gym')); c(req('f19','e19')); }
+  if (s === 7) { c(reqR('rg-est','e-est')); c(req('f21','e21')); }
+  if (s === 8) { c(reqR('rg-rel','e-rel')); c(reqR('rg-mfc','e-mfc')); c(req('f22','e22')); }
+  return ok;
 }
 
-// ═══════════════════════════════════════════════════
-//  HELPER UI FUNCTIONS
-// ═══════════════════════════════════════════════════
-function selectRadio(el, groupId, value) {
-  document.querySelectorAll(`#${groupId} .radio-option`).forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  el.dataset.value = value;
-  // Clear error
-  const errEl = document.getElementById('e-' + groupId.replace('rg-', ''));
-  if (errEl) errEl.classList.remove('show');
+// ═══════════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function selR(el, gid, val) {
+  document.querySelectorAll(`#${gid} .ro`).forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel'); el.dataset.v = val;
+  const er = document.getElementById('e-' + gid.replace('rg-',''));
+  if (er) er.classList.remove('on');
+}
+function gR(gid) { const s = document.querySelector(`#${gid} .ro.sel`); return s ? s.dataset.v : ''; }
+function togC(el) { el.classList.toggle('sel'); }
+function gC(gid) { return [...document.querySelectorAll(`#${gid} .co.sel`)].map(e => e.textContent.trim()); }
+function togDay(el) { el.classList.toggle('sel'); document.getElementById('e-dias').classList.remove('on'); }
+function getDays() { return [...document.querySelectorAll('#dts .dt.sel')].map(e => e.dataset.day); }
+function onDistMeta() {
+  const v = document.getElementById('f13').value;
+  document.getElementById('otra-wrap').style.display = v === 'otra' ? 'block' : 'none';
+  document.getElementById('e13').classList.remove('on');
+}
+function toggleTiempo() {
+  document.getElementById('tobj-wrap').style.display = gR('rg-obj') === 'tiempo' ? 'block' : 'none';
+}
+function togLes() { document.getElementById('les-det').style.display = gR('rg-les') === 'si' ? 'block' : 'none'; }
+function togCir() { document.getElementById('cir-det').style.display = gR('rg-cir') === 'si' ? 'block' : 'none'; }
+function calcSem() {
+  const v = document.getElementById('f15').value;
+  if (!v) return;
+  const ms = new Date(v) - new Date();
+  const s = Math.round(ms / (7 * 86400000));
+  const el = document.getElementById('sem-info');
+  if (s > 0) { el.style.display = 'block'; document.getElementById('sem-txt').textContent = `${s} semanas de preparación`; }
+  else el.style.display = 'none';
+}
+function getSemanas() {
+  const v = document.getElementById('f15').value;
+  if (v) { const s = Math.round((new Date(v) - new Date()) / (7 * 86400000)); if (s > 0) return s; }
+  return null;
+}
+function updRes() {
+  const dm = document.getElementById('f13').value;
+  const obj = gR('rg-obj');
+  const dias = getDays().length;
+  document.getElementById('resumen').innerHTML =
+    `<div>👤 <b>${document.getElementById('f1').value||'—'}</b></div>
+     <div>🎯 ${dm||'—'} · ${obj==='terminar'?'Solo terminar':obj==='tiempo'?'Tiempo específico':'—'}</div>
+     <div>📅 ${dias} días/semana</div>`;
 }
 
-function getRadioValue(groupId) {
-  const sel = document.querySelector(`#${groupId} .radio-option.selected`);
-  return sel ? sel.dataset.value : '';
-}
-
-function toggleCheck(el, groupId) {
-  el.classList.toggle('selected');
-}
-
-function getCheckValues(groupId) {
-  return Array.from(document.querySelectorAll(`#${groupId} .check-option.selected`)).map(el => el.textContent.trim());
-}
-
-function toggleDay(el) {
-  el.classList.toggle('selected');
-  document.getElementById('e-dias').classList.remove('show');
-}
-
-function getSelectedDays() {
-  return Array.from(document.querySelectorAll('#day-toggles .day-toggle.selected')).map(el => el.dataset.day);
-}
-
-function toggleOtraDistancia() {
-  const val = document.getElementById('f-distancia-meta').value;
-  document.getElementById('otra-distancia-wrap').style.display = val === 'Otra' ? 'block' : 'none';
-}
-
-function toggleTiempoObjetivo() {
-  const val = getRadioValue('rg-objetivo');
-  document.getElementById('tiempo-objetivo-wrap').style.display = val === 'Lograr un tiempo específico' ? 'block' : 'none';
-}
-
-function toggleLesionDetail() {
-  const val = getRadioValue('rg-lesion');
-  document.getElementById('lesion-detail-wrap').style.display = val === 'Sí' ? 'block' : 'none';
-}
-
-function toggleCirugiaDetail() {
-  const val = getRadioValue('rg-cirugia');
-  document.getElementById('cirugia-detail-wrap').style.display = val === 'Sí' ? 'block' : 'none';
-}
-
-function calcSemanas() {
-  const fecha = document.getElementById('f-fecha-carrera').value;
-  if (!fecha) return;
-  const ms = new Date(fecha) - new Date();
-  const semanas = Math.round(ms / (7 * 24 * 60 * 60 * 1000));
-  const el = document.getElementById('semanas-info');
-  if (semanas > 0) {
-    el.style.display = 'block';
-    document.getElementById('semanas-text').textContent = `${semanas} semanas de preparación`;
-  } else {
-    el.style.display = 'none';
-  }
-}
-
-function updateResumen() {
-  const nombre = document.getElementById('f-nombre').value;
-  const distancia = document.getElementById('f-distancia-meta').value;
-  const objetivo = getRadioValue('rg-objetivo');
-  const dias = getSelectedDays().length;
-  const fecha = document.getElementById('f-fecha-carrera').value;
-  let semanas = '';
-  if (fecha) {
-    const ms = new Date(fecha) - new Date();
-    const s = Math.round(ms / (7 * 24 * 60 * 60 * 1000));
-    if (s > 0) semanas = ` · ${s} semanas`;
-  }
-  document.getElementById('resumen-plan').innerHTML = `
-    <div>👤 <strong>${nombre || '—'}</strong></div>
-    <div>🎯 Objetivo: <strong>${distancia || '—'}</strong> · ${objetivo || '—'}</div>
-    <div>📅 ${dias} días/semana${semanas}</div>
-  `;
-}
-
-// ═══════════════════════════════════════════════════
-//  COLLECT FORM DATA
-// ═══════════════════════════════════════════════════
-function collectFormData() {
-  const distMeta = document.getElementById('f-distancia-meta').value;
-  const fecha = document.getElementById('f-fecha-carrera').value;
-  let semanas = 'No especificada';
-  if (fecha) {
-    const ms = new Date(fecha) - new Date();
-    const s = Math.round(ms / (7 * 24 * 60 * 60 * 1000));
-    if (s > 0) semanas = `${s} semanas`;
-  }
+// ═══════════════════════════════════════════════════════════
+//  COLLECT DATA
+// ═══════════════════════════════════════════════════════════
+function collect() {
+  const dm = document.getElementById('f13').value;
   return {
-    nombre: document.getElementById('f-nombre').value,
-    edad: document.getElementById('f-edad').value,
-    sexo: document.getElementById('f-sexo').value,
-    peso: document.getElementById('f-peso').value,
-    estatura: document.getElementById('f-estatura').value,
-    fc_reposo: document.getElementById('f-fc-reposo').value || 'No especificado',
-    fc_max: document.getElementById('f-fc-max').value || 'No especificado',
-    experiencia: document.getElementById('f-experiencia').value,
-    km_semanales: document.getElementById('f-km-semanales').value,
-    ritmo_habitual: document.getElementById('f-ritmo-habitual').value || 'No especificado',
-    distancia_max: document.getElementById('f-distancia-max').value,
-    mejor_tiempo: document.getElementById('f-mejor-tiempo').value || 'No especificado',
-    distancia_meta: distMeta === 'Otra' ? document.getElementById('f-otra-distancia').value : distMeta,
-    objetivo: getRadioValue('rg-objetivo'),
-    tiempo_objetivo: document.getElementById('f-tiempo-objetivo').value || 'No especificado',
-    fecha_carrera: fecha || 'No especificada',
-    semanas_disponibles: semanas,
-    dias_disponibles: getSelectedDays().join(', '),
-    duracion_sesion: document.getElementById('f-duracion-sesion').value,
-    horario: getRadioValue('rg-horario'),
-    lesiones: getRadioValue('rg-lesion') === 'Sí' ? (document.getElementById('f-lesion-desc').value || 'Sí (no especificada)') : 'Ninguna',
-    cirugias: getRadioValue('rg-cirugia') === 'Sí' ? (document.getElementById('f-cirugia-desc').value || 'Sí (no especificada)') : 'Ninguna',
-    autorizacion_medica: getRadioValue('rg-autorizacion'),
-    superficie: getCheckValues('cg-superficie').join(', ') || 'No especificado',
-    topografia: getRadioValue('rg-topografia'),
-    gimnasio: getRadioValue('rg-gimnasio'),
-    clima: document.getElementById('f-clima').value,
-    sueno: document.getElementById('f-sueno').value,
-    estres: getRadioValue('rg-estres'),
-    otras_actividades: getCheckValues('cg-actividades').join(', ') || 'Ninguna',
-    alimentacion: document.getElementById('f-alimentacion').value,
-    reloj_gps: getRadioValue('rg-reloj'),
-    monitor_fc: getRadioValue('rg-monitor-fc'),
-    apps: getCheckValues('cg-apps').join(', ') || 'Ninguna',
-    nombre_plan: document.getElementById('f-nombre-plan').value,
+    nombre: document.getElementById('f1').value,
+    edad: +document.getElementById('f2').value,
+    sexo: document.getElementById('f3').value,
+    peso: +document.getElementById('f4').value,
+    estatura: +document.getElementById('f5').value,
+    fcReposo: +document.getElementById('f6').value || 0,
+    fcMax: +document.getElementById('f7').value || 0,
+    experiencia: document.getElementById('f8').value,
+    kmSemanales: +document.getElementById('f9').value || 0,
+    ritmoHabitual: document.getElementById('f10').value,
+    distMax: document.getElementById('f11').value,
+    mejorTiempo: document.getElementById('f12').value,
+    distMeta: dm === 'otra' ? (document.getElementById('f13b').value || 'Otra distancia') : dm,
+    distMetaVal: dm,
+    objetivo: gR('rg-obj'),
+    tiempoObj: document.getElementById('f14').value,
+    fechaCarrera: document.getElementById('f15').value,
+    semanasDisp: getSemanas(),
+    dias: getDays(),
+    durMax: +document.getElementById('f16').value,
+    horario: gR('rg-hor'),
+    lesion: gR('rg-les') === 'si',
+    lesionDesc: document.getElementById('f17').value,
+    cirugia: gR('rg-cir') === 'si',
+    cirugiaDesc: document.getElementById('f18').value,
+    autorizacion: gR('rg-aut'),
+    superficie: gC('cg-sup').join(', ') || 'No especificado',
+    topografia: gR('rg-top'),
+    gimnasio: gR('rg-gym') === 'si',
+    clima: document.getElementById('f19').value,
+    sueno: +document.getElementById('f20').value,
+    estres: gR('rg-est'),
+    actividades: gC('cg-act').join(', '),
+    alimentacion: document.getElementById('f21').value,
+    relojGPS: gR('rg-rel') === 'si',
+    monitorFC: gR('rg-mfc'),
+    apps: gC('cg-apps').join(', '),
+    nombrePlan: document.getElementById('f22').value,
   };
 }
 
-// ═══════════════════════════════════════════════════
-//  GENERATE PLAN
-// ═══════════════════════════════════════════════════
-async function generatePlan() {
-  if (!validateStep(8)) return;
-  const apiKey = localStorage.getItem('runcoach_api_key');
-  if (!apiKey) {
-    showToast('Ingresa tu API Key en la pantalla de inicio', 'warning');
-    return;
-  }
-  currentFormData = collectFormData();
+// ═══════════════════════════════════════════════════════════
+//  PLAN GENERATION ENGINE
+// ═══════════════════════════════════════════════════════════
+function buildPlan() {
+  if (!valStep(8)) return;
+  formData = collect();
   showScreen('loading');
-  startLoadingMessages();
-
-  const prompt = buildPrompt(currentFormData);
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${response.status}`);
-    }
-    const data = await response.json();
-    const planText = data.content?.[0]?.text || '';
-    currentPlanData = planText;
-    renderPlan(planText, currentFormData);
+  startLoadMsg();
+  // Small delay for UX
+  setTimeout(() => {
+    planObj = generatePlan(formData);
+    stopLoadMsg();
+    renderPlan(planObj, formData);
     showScreen('plan');
-  } catch (err) {
-    showScreen('wizard');
-    renderStep(8);
-    showErrorModal('Error al generar el plan', `Hubo un error al conectar con la IA: ${err.message}. Verifica tu API Key e intenta de nuevo.`);
+  }, 2000);
+}
+
+// ─── PACE UTILITIES ───────────────────────────────────────
+function paceStr(basePaceSecPerKm, factor, useGPS) {
+  if (!useGPS) {
+    const ef = Math.round(factor * 10) / 10;
+    if (ef <= 0.65) return 'Esfuerzo 4-5/10 (conversacional)';
+    if (ef <= 0.8) return 'Esfuerzo 6-7/10 (moderado)';
+    if (ef <= 0.9) return 'Esfuerzo 7-8/10 (esfuerzo)';
+    return 'Esfuerzo 9-10/10 (máximo)';
   }
+  const s = Math.round(basePaceSecPerKm * factor);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2,'0')} min/km`;
 }
 
-function buildPrompt(d) {
-  return `Eres un entrenador de running profesional con experiencia en preparación de corredores de todos los niveles.
-
-Basándote en la siguiente información del corredor, diseña un plan de entrenamiento completo, estructurado semana por semana:
-
-PERFIL DEL CORREDOR:
-- Nombre: ${d.nombre}
-- Edad: ${d.edad} años | Sexo: ${d.sexo} | Peso: ${d.peso} kg | Estatura: ${d.estatura} cm
-- FC en reposo: ${d.fc_reposo} bpm | FC máxima: ${d.fc_max} bpm
-
-NIVEL ACTUAL:
-- Experiencia: ${d.experiencia}
-- Kilómetros semanales actuales: ${d.km_semanales} km
-- Ritmo habitual de entrenamiento: ${d.ritmo_habitual} min/km
-- Distancia máxima completada: ${d.distancia_max}
-- Mejor tiempo reciente: ${d.mejor_tiempo}
-
-OBJETIVO:
-- Distancia meta: ${d.distancia_meta}
-- Objetivo: ${d.objetivo}
-- Tiempo objetivo: ${d.tiempo_objetivo}
-- Fecha de la carrera: ${d.fecha_carrera}
-- Semanas disponibles: ${d.semanas_disponibles}
-
-DISPONIBILIDAD:
-- Días de entrenamiento: ${d.dias_disponibles}
-- Duración máxima por sesión: ${d.duracion_sesion}
-- Horario preferido: ${d.horario}
-
-SALUD:
-- Lesiones actuales/crónicas: ${d.lesiones}
-- Cirugías: ${d.cirugias}
-- Autorización médica: ${d.autorizacion_medica}
-
-ENTORNO:
-- Superficie: ${d.superficie}
-- Topografía: ${d.topografia}
-- Acceso a gimnasio: ${d.gimnasio}
-- Clima: ${d.clima}
-
-RECUPERACIÓN:
-- Horas de sueño: ${d.sueno} horas
-- Nivel de estrés: ${d.estres}
-- Otras actividades: ${d.otras_actividades}
-- Alimentación: ${d.alimentacion}
-
-TECNOLOGÍA:
-- Reloj GPS: ${d.reloj_gps}
-- Monitor FC: ${d.monitor_fc}
-- Apps que usa: ${d.apps}
-
-INSTRUCCIONES PARA EL PLAN:
-1. Organiza el plan semana por semana, desde la Semana 1 hasta la semana de la carrera.
-2. Para cada semana indica: objetivo de la semana, días de entrenamiento con tipo de sesión, distancia/duración y ritmo recomendado.
-3. Tipos de sesión permitidos: Rodaje suave (conversacional), Rodaje de progresión, Series/Intervalos, Tirada larga, Fartlek, Descanso activo (caminata o yoga), Descanso total, Entrenamiento de fuerza (si tiene gimnasio).
-4. Adapta la intensidad a la salud reportada. Si hay lesiones, reduce el impacto y agrega notas de precaución.
-5. Si no tiene reloj GPS ni pulsómetro, expresa los ritmos como "esfuerzo percibido" (1-10) en lugar de min/km o zonas de FC.
-6. Incluye una semana de tapering (reducción de carga) las 2 semanas anteriores a la carrera.
-7. Al final del plan, incluye una sección titulada exactamente "CONSEJOS GENERALES:" con 5-7 recomendaciones específicas para este corredor, una por línea comenzando con "- ".
-8. Responde SOLO con el plan estructurado. No incluyas explicaciones previas ni despedidas.
-9. Usa el siguiente formato para cada semana: "=== Semana X ===" seguido del objetivo y los días.
-10. Sé específico y práctico.`;
+function parsePaceSec(str) {
+  if (!str) return 0;
+  const m = str.match(/(\d+):(\d+)/);
+  if (m) return parseInt(m[1]) * 60 + parseInt(m[2]);
+  return 0;
 }
 
-// ═══════════════════════════════════════════════════
-//  LOADING MESSAGES
-// ═══════════════════════════════════════════════════
-const loadingMsgs = ['Analizando tu perfil...', 'Calculando semanas de preparación...', 'Diseñando tus sesiones...', 'Ajustando intensidades...', 'Personalizando recomendaciones...'];
-let loadingInterval;
-function startLoadingMessages() {
-  let i = 0;
-  document.getElementById('loading-text').textContent = loadingMsgs[0];
-  loadingInterval = setInterval(() => {
-    i = (i + 1) % loadingMsgs.length;
-    document.getElementById('loading-text').textContent = loadingMsgs[i];
-  }, 2500);
-}
-function stopLoadingMessages() {
-  clearInterval(loadingInterval);
+function estimatePace(d) {
+  // Estimate base easy pace from experience and current km/week
+  const exp = d.experiencia;
+  const km = d.kmSemanales;
+  let baseSec;
+  if (exp === 'principiante') baseSec = 480; // 8:00
+  else if (exp === 'basico') baseSec = 420; // 7:00
+  else if (exp === 'intermedio') baseSec = 360; // 6:00
+  else baseSec = 320; // 5:20 (avanzado)
+  // Adjust by km/week
+  if (km > 60) baseSec -= 30;
+  else if (km < 15) baseSec += 30;
+  // If they provided their pace, use that
+  const provided = parsePaceSec(d.ritmoHabitual);
+  if (provided > 0) return provided;
+  return baseSec;
 }
 
-// ═══════════════════════════════════════════════════
+// ─── VOLUME PLANNING ──────────────────────────────────────
+function planWeeks(d) {
+  const defWeeks = {principiante:8, basico:10, intermedio:12, avanzado:16};
+  const metaWeeks = {'5K':8,'10K':10,'15K':12,'21K':16,'42K':20};
+
+  // Determine total weeks
+  let totalW = d.semanasDisp;
+  if (!totalW) {
+    const key = d.distMetaVal === 'otra' ? 'intermedio' : d.distMeta.replace('K','K').replace(' - Media Maratón','').trim();
+    totalW = metaWeeks[key] || defWeeks[d.experiencia] || 12;
+  }
+  totalW = Math.max(4, Math.min(totalW, 28));
+
+  // Base weekly km
+  let base = d.kmSemanales;
+  if (base === 0) {
+    const expBase = {principiante:10, basico:18, intermedio:28, avanzado:40};
+    base = expBase[d.experiencia] || 15;
+  }
+  // If lesion, reduce volume
+  if (d.lesion) base = Math.round(base * 0.8);
+
+  // Generate volumes: 10% rule, recovery weeks every 4th, taper last 2
+  const vols = [];
+  let cur = base;
+  for (let w = 1; w <= totalW; w++) {
+    const fromEnd = totalW - w + 1;
+    let vol;
+    if (fromEnd === 1) { vol = Math.round(cur * 0.35); } // race week
+    else if (fromEnd === 2) { vol = Math.round(cur * 0.55); } // taper 2
+    else if (fromEnd === 3) { vol = Math.round(cur * 0.7); } // taper 1
+    else if (w % 4 === 0) { vol = Math.round(cur * 0.8); } // recovery
+    else { vol = Math.round(cur * 1.1); cur = vol; } // build
+    vols.push(Math.max(8, Math.min(vol, 130)));
+  }
+  return { totalW, vols, base };
+}
+
+// ─── SESSION TEMPLATES ────────────────────────────────────
+const SESSION_TYPES = {
+  suave: (km, pace, useGPS) => ({
+    tipo: 'Rodaje suave', badge: 'bs',
+    detail: `${km} km · ${pace(0.95)}`,
+    note: 'Ritmo conversacional, puedes hablar con alguien'
+  }),
+  largo: (km, pace, useGPS) => ({
+    tipo: 'Tirada larga', badge: 'bl',
+    detail: `${km} km · ${pace(1.05)}`,
+    note: 'El ritmo más suave de la semana. Llevar agua.'
+  }),
+  intervalos: (reps, dist, pace, useGPS) => ({
+    tipo: 'Series / Intervalos', badge: 'bi',
+    detail: `${reps}×${dist}m · ${pace(0.75)} + Recuperación suave`,
+    note: `Calentar 10 min · ${reps} repeticiones de ${dist}m · Enfriar 10 min`
+  }),
+  progresion: (km, pace, useGPS) => ({
+    tipo: 'Rodaje de progresión', badge: 'bi',
+    detail: `${km} km · inicio ${pace(1.05)} → final ${pace(0.85)}`,
+    note: 'Empezar suave y terminar al límite del umbral aeróbico'
+  }),
+  fartlek: (km, pace, useGPS) => ({
+    tipo: 'Fartlek', badge: 'bi',
+    detail: `${km} km · alternando ritmos`,
+    note: `Ejemplo: 1 min rápido (${pace(0.75)}) / 2 min suave. Repetir.`
+  }),
+  fuerza: () => ({
+    tipo: 'Fuerza para corredores', badge: 'bf',
+    detail: '45-60 min · peso corporal + gimnasio',
+    note: 'Sentadillas, zancadas, core, isquiotibiales. No cardio intenso.'
+  }),
+  descansoActivo: () => ({
+    tipo: 'Descanso activo', badge: 'bd',
+    detail: '20-30 min · caminata, yoga o stretching',
+    note: 'Movilidad articular, estiramiento de cadera y gemelos'
+  }),
+  descanso: () => ({
+    tipo: 'Descanso total', badge: 'bd',
+    detail: 'Reposo',
+    note: 'Hidratación, sueño, nutrición. El descanso también entrena.'
+  }),
+  carrera: (dist) => ({
+    tipo: '🏆 DÍA DE CARRERA', badge: 'bl',
+    detail: `${dist} · ¡Disfruta el proceso!`,
+    note: 'Desayuna 2-3 hrs antes. Calienta 10 min. Confía en tu entrenamiento.'
+  }),
+};
+
+// ─── ASSIGN SESSIONS TO DAYS ─────────────────────────────
+function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym, hasLesion, exp) {
+  const n = days.length;
+  const pace = (f) => paceStr(basePace, f, useGPS);
+  const fromEnd = totalW - weekNum + 1;
+  const isRaceWeek = fromEnd === 1;
+  const isTaper = fromEnd <= 3;
+  const isRecovery = weekNum % 4 === 0 && !isTaper;
+
+  // Distribute km across sessions
+  const longKm = Math.round(weekVol * 0.35);
+  const easyKm = Math.round(weekVol * 0.18);
+  const intKm = Math.round(weekVol * 0.12);
+
+  // Session pool
+  let pool = [];
+  if (isRaceWeek) {
+    pool = [
+      {day: 0, s: SESSION_TYPES.suave(Math.round(weekVol * 0.4), pace, useGPS)},
+      {day: 1, s: SESSION_TYPES.descansoActivo()},
+      {day: 2, s: SESSION_TYPES.descanso()},
+      {day: 3, s: SESSION_TYPES.carrera(formData.distMeta)},
+    ];
+  } else if (isTaper) {
+    pool = [];
+    days.forEach((d, i) => {
+      if (i === 0) pool.push({day: i, s: SESSION_TYPES.suave(easyKm, pace, useGPS)});
+      else if (i === Math.floor(n / 2)) pool.push({day: i, s: SESSION_TYPES.largo(longKm, pace, useGPS)});
+      else if (i === n - 1 && !isRecovery) pool.push({day: i, s: SESSION_TYPES.suave(easyKm, pace, useGPS)});
+      else pool.push({day: i, s: SESSION_TYPES.descansoActivo()});
+    });
+  } else if (isRecovery) {
+    days.forEach((d, i) => {
+      if (i === 0) pool.push({day: i, s: SESSION_TYPES.suave(Math.round(easyKm * 0.8), pace, useGPS)});
+      else if (i === Math.floor(n / 2)) pool.push({day: i, s: SESSION_TYPES.descansoActivo()});
+      else if (i === n - 1) pool.push({day: i, s: SESSION_TYPES.suave(Math.round(easyKm * 0.7), pace, useGPS)});
+      else pool.push({day: i, s: SESSION_TYPES.descanso()});
+    });
+  } else {
+    // Normal build week
+    const hasSeries = !hasLesion && (exp === 'intermedio' || exp === 'avanzado') && n >= 3;
+    const hasFartlek = !hasLesion && exp !== 'principiante' && n >= 3;
+    let sessions = [];
+    // Long run — ideally second to last day
+    const longIdx = n >= 3 ? n - 2 : n - 1;
+    sessions[longIdx] = SESSION_TYPES.largo(longKm, pace, useGPS);
+    // Fill other days
+    let filled = 0;
+    for (let i = 0; i < n; i++) {
+      if (sessions[i]) continue;
+      if (hasGym && filled === 0 && !hasLesion) { sessions[i] = SESSION_TYPES.fuerza(); filled++; continue; }
+      if (hasSeries && filled < 1) { sessions[i] = SESSION_TYPES.intervalos(6, exp === 'avanzado' ? 1000 : 400, pace, useGPS); filled++; continue; }
+      if (hasFartlek && filled < 1) { sessions[i] = SESSION_TYPES.fartlek(intKm, pace, useGPS); filled++; continue; }
+      if (i === n - 1) { sessions[i] = SESSION_TYPES.descansoActivo(); continue; }
+      sessions[i] = SESSION_TYPES.suave(easyKm, pace, useGPS);
+    }
+    days.forEach((d, i) => pool.push({day: i, s: sessions[i] || SESSION_TYPES.descansoActivo()}));
+    return pool;
+  }
+  return pool;
+}
+
+// ─── WEEK OBJECTIVES ─────────────────────────────────────
+function weekObjective(w, total, exp, dist, lesion, isTaper, isRecovery, isRaceWeek) {
+  if (isRaceWeek) return `🏆 ¡Semana de competencia! Conserva energía y disfruta el proceso.`;
+  if (isRecovery) return `Semana de recuperación activa. Reducir carga para absorber las adaptaciones.`;
+  const phase = w / total;
+  if (phase <= 0.3) return `Fase de base: construir hábito y volumen aeróbico de forma progresiva.`;
+  if (phase <= 0.6) return `Fase de desarrollo: incrementar resistencia y comenzar a trabajar el ritmo.`;
+  if (isTaper && total - w + 1 === 3) return `Inicio del tapering: reducir carga, mantener intensidad puntual.`;
+  if (isTaper && total - w + 1 === 2) return `Tapering final: piernas frescas para la carrera. Pocos km, buena calidad.`;
+  return `Fase de pico: mayor carga de la preparación. ${lesion ? 'Atención a la lesión, sin sobrepasar el límite.' : 'Exige más al cuerpo con cuidado.'}`;
+}
+
+// ─── MAIN GENERATOR ──────────────────────────────────────
+function generatePlan(d) {
+  const { totalW, vols } = planWeeks(d);
+  const basePace = estimatePace(d);
+  const useGPS = d.relojGPS;
+  const weeks = [];
+
+  for (let w = 1; w <= totalW; w++) {
+    const vol = vols[w - 1];
+    const fromEnd = totalW - w + 1;
+    const isTaper = fromEnd <= 3;
+    const isRecovery = w % 4 === 0 && !isTaper;
+    const isRaceWeek = fromEnd === 1;
+
+    const sessions = assignSessions(
+      d.dias, vol, w, totalW, basePace, useGPS,
+      d.gimnasio, d.lesion, d.experiencia
+    );
+
+    const obj = weekObjective(w, totalW, d.experiencia, d.distMeta, d.lesion, isTaper, isRecovery, isRaceWeek);
+
+    weeks.push({
+      num: w,
+      vol,
+      isRecovery,
+      isTaper,
+      isRaceWeek,
+      objetivo: obj,
+      sessions: sessions.map((item, i) => ({
+        day: d.dias[item.day] || d.dias[i] || `Día ${i+1}`,
+        ...item.s
+      }))
+    });
+  }
+
+  const tips = buildTips(d);
+  return { weeks, tips, totalW, d };
+}
+
+// ─── TIPS GENERATOR ──────────────────────────────────────
+function buildTips(d) {
+  const tips = [];
+  tips.push(`Nunca aumentes el volumen semanal más de un 10%. La progresión gradual es la clave para evitar lesiones.`);
+  if (d.clima === 'caluroso') tips.push(`En clima caluroso, hidratate con al menos 500ml por cada hora de entrenamiento. Sal más temprano o de noche para evitar las horas pico de calor.`);
+  if (d.lesion) tips.push(`⚠️ ${d.lesionDesc ? 'Dada tu lesión (' + d.lesionDesc + ')' : 'Dado que reportas una lesión'}: escucha siempre a tu cuerpo. Si sientes dolor agudo, detente y consulta a un fisioterapeuta antes de continuar.`);
+  if (d.sueno < 7) tips.push(`Procura dormir mínimo 7-8 horas. La recuperación ocurre durante el sueño — es tan importante como el entrenamiento.`);
+  if (d.estres === 'alto') tips.push(`Con estrés alto, el cuerpo tiene menos capacidad de recuperación. En semanas muy exigentes, prioriza el descanso sobre cumplir km a toda costa.`);
+  tips.push(`La nutrición en los días de rodaje largo es clave: carbohidratos complejos el día anterior y una comida liviana 1-2 horas antes de correr.`);
+  if (!d.relojGPS) tips.push(`Sin reloj GPS, usa la "prueba del habla": si puedes mantener una conversación mientras corres, estás en zona aeróbica suave. Si no puedes, vas demasiado rápido.`);
+  if (d.gimnasio) tips.push(`El trabajo de fuerza complementa al running: enfócate en glúteos, core y estabilizadores de tobillo. Evita pesas pesadas de piernas el día anterior a una tirada larga.`);
+  tips.push(`El día de la carrera: no estrenes zapatillas, no cambies tu rutina de alimentación, calienta 10-15 minutos y empieza más lento que tu ritmo objetivo — guarda energía para la segunda mitad.`);
+  return tips.slice(0, 7);
+}
+
+// ═══════════════════════════════════════════════════════════
 //  RENDER PLAN
-// ═══════════════════════════════════════════════════
-function renderPlan(text, formData) {
-  stopLoadingMessages();
-  // Header
-  document.getElementById('plan-display-name').textContent = formData.nombre_plan;
-  document.getElementById('plan-display-meta').innerHTML = `
-    <div class="plan-meta-item"><i class="fa-solid fa-person-running"></i> ${formData.nombre}</div>
-    <div class="plan-meta-item"><i class="fa-solid fa-bullseye"></i> ${formData.distancia_meta}</div>
-    <div class="plan-meta-item"><i class="fa-solid fa-calendar-week"></i> ${formData.semanas_disponibles}</div>
-    <div class="plan-meta-item"><i class="fa-solid fa-calendar-week"></i> ${formData.dias_disponibles.split(',').length} días/sem</div>
+// ═══════════════════════════════════════════════════════════
+function renderPlan(plan, fd) {
+  document.getElementById('pname').textContent = fd.nombrePlan;
+  document.getElementById('pmeta').innerHTML = `
+    <div class="pmi"><i class="fa-solid fa-person-running"></i>${fd.nombre}</div>
+    <div class="pmi"><i class="fa-solid fa-bullseye"></i>${fd.distMeta}</div>
+    <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${plan.totalW} semanas</div>
+    <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${fd.dias.length} días/sem</div>
   `;
 
-  // Extract consejos
-  let planBody = text;
-  let consejos = [];
-  const consejosIdx = text.indexOf('CONSEJOS GENERALES:');
-  if (consejosIdx !== -1) {
-    const consejosText = text.slice(consejosIdx + 'CONSEJOS GENERALES:'.length);
-    planBody = text.slice(0, consejosIdx);
-    consejos = consejosText.split('\n').filter(l => l.trim().startsWith('-')).map(l => l.replace(/^-\s*/, '').trim());
-  }
-
-  // Parse semanas
-  const semanaRegex = /={2,3}\s*Semana\s*(\d+)\s*={2,3}([\s\S]*?)(?=={2,3}\s*Semana\s*\d+|CONSEJOS GENERALES:|$)/gi;
-  const semanas = [];
-  let m;
-  while ((m = semanaRegex.exec(planBody)) !== null) {
-    semanas.push({ num: m[1], content: m[2].trim() });
-  }
-
-  const content = document.getElementById('plan-content');
-  if (semanas.length === 0) {
-    // Fallback: show raw text
-    content.innerHTML = `<div class="plan-raw">${escapeHtml(text)}</div>`;
-  } else {
-    content.innerHTML = semanas.map((s, i) => buildSemanaCard(s, i)).join('');
-  }
-
-  // Consejos
-  if (consejos.length > 0) {
-    document.getElementById('consejos-section').style.display = 'block';
-    document.getElementById('consejos-list').innerHTML = consejos.map(c => `<li>${escapeHtml(c)}</li>`).join('');
-  }
-
-  // Save button state
-  document.getElementById('btn-save-plan').disabled = false;
-  document.getElementById('btn-save-plan').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar plan';
-}
-
-function buildSemanaCard(semana, idx) {
-  const lines = semana.content.split('\n').filter(l => l.trim());
-  // First line is usually the objective
-  let objetivo = '';
-  let sessionLines = [];
-  lines.forEach(l => {
-    if (l.toLowerCase().includes('objetivo') || (!objetivo && l.length > 10 && !l.match(/^(lunes|martes|miércoles|jueves|viernes|sábado|domingo|día|day)/i))) {
-      if (!objetivo) objetivo = l.replace(/^objetivo[:\s]*/i, '').trim();
-      else sessionLines.push(l);
-    } else {
-      sessionLines.push(l);
-    }
-  });
-
-  const bodyHtml = sessionLines.map(l => {
-    const badge = getBadge(l);
-    return `<div class="session-row">
-      <div class="session-day">${extractDay(l)}</div>
-      <div><div class="session-type">${cleanLine(l)}</div></div>
-      <div>${badge}</div>
+  const content = document.getElementById('pcontent');
+  content.innerHTML = plan.weeks.map((w, i) => {
+    const tag = w.isRaceWeek ? ' 🏆' : w.isTaper ? ' ↓ Tapering' : w.isRecovery ? ' 🔄 Recuperación' : '';
+    const sessHTML = w.sessions.map(s => `
+      <div class="sr">
+        <div class="sd">${s.day.substring(0,3)}</div>
+        <div>
+          <div class="stype">${s.tipo}</div>
+          <div class="sdet">${s.detail}</div>
+          ${s.note ? `<div class="sdet" style="color:#555;font-style:italic">${s.note}</div>` : ''}
+        </div>
+        <div><span class="badge ${s.badge}">${badgeLabel(s.badge)}</span></div>
+      </div>`).join('');
+    return `<div class="ai">
+      <div class="ah ${i===0?'open':''}" onclick="togAcc(this)">
+        <span><span class="tr">Semana ${w.num}</span>${tag} · ${w.vol} km</span>
+        <i class="fa-solid fa-chevron-down chv"></i>
+      </div>
+      <div class="abody ${i===0?'open':''}">
+        <div class="week-obj">${w.objetivo}</div>
+        ${sessHTML}
+      </div>
     </div>`;
-  }).join('') || `<div style="color:var(--text-muted); font-size:14px; padding: 8px 0;">${escapeHtml(semana.content)}</div>`;
+  }).join('');
 
-  return `<div class="accordion-item">
-    <div class="accordion-header" onclick="toggleAccordion(this)" ${idx === 0 ? 'class="accordion-header open"' : ''}>
-      <span><span class="text-red">Semana ${semana.num}</span>${objetivo ? ' — ' + objetivo.substring(0, 60) + (objetivo.length > 60 ? '...' : '') : ''}</span>
-      <i class="fa-solid fa-chevron-down chevron"></i>
-    </div>
-    <div class="accordion-body ${idx === 0 ? 'open' : ''}">
-      ${bodyHtml}
-    </div>
-  </div>`;
+  // Tips
+  document.getElementById('csec').style.display = 'block';
+  document.getElementById('clist').innerHTML = plan.tips.map(t => `<li>${esc(t)}</li>`).join('');
+
+  document.getElementById('bsave').disabled = false;
+  document.getElementById('bsave').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar plan';
+  document.getElementById('bsave').style.background = 'var(--red)';
 }
 
-function toggleAccordion(header) {
-  const body = header.nextElementSibling;
-  header.classList.toggle('open');
-  body.classList.toggle('open');
+function badgeLabel(b) {
+  return {bs:'Suave',bl:'Largo',bi:'Intenso',bd:'Descanso',bf:'Fuerza'}[b] || '';
 }
+function togAcc(h) { h.classList.toggle('open'); h.nextElementSibling.classList.toggle('open'); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function getBadge(line) {
-  const l = line.toLowerCase();
-  if (l.includes('suave') || l.includes('conversacional') || l.includes('regenerativo')) return '<span class="session-badge badge-suave">Suave</span>';
-  if (l.includes('largo') || l.includes('tirada')) return '<span class="session-badge badge-largo">Largo</span>';
-  if (l.includes('interval') || l.includes('series') || l.includes('fartlek') || l.includes('progresión')) return '<span class="session-badge badge-intervalo">Intenso</span>';
-  if (l.includes('descanso') || l.includes('rest') || l.includes('yoga') || l.includes('caminata')) return '<span class="session-badge badge-descanso">Descanso</span>';
-  if (l.includes('fuerza') || l.includes('gimnasio')) return '<span class="session-badge badge-fuerza">Fuerza</span>';
-  return '';
-}
-
-function extractDay(line) {
-  const days = { 'lunes': 'L', 'martes': 'M', 'miércoles': 'X', 'jueves': 'J', 'viernes': 'V', 'sábado': 'S', 'domingo': 'D' };
-  for (const [k, v] of Object.entries(days)) {
-    if (line.toLowerCase().includes(k)) return v;
-  }
-  return '—';
-}
-
-function cleanLine(line) {
-  return escapeHtml(line.replace(/^(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)[:\s-]*/i, '').trim());
-}
-
-function escapeHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  LOCALSTORAGE
-// ═══════════════════════════════════════════════════
-function getPlanes() {
-  try { return JSON.parse(localStorage.getItem('runcoach_planes') || '[]'); } catch { return []; }
-}
-function setPlanes(arr) {
-  localStorage.setItem('runcoach_planes', JSON.stringify(arr));
-}
+// ═══════════════════════════════════════════════════════════
+function getPlanes() { try { return JSON.parse(localStorage.getItem('runcoach_planes')||'[]'); } catch { return []; } }
+function setPlanes(a) { localStorage.setItem('runcoach_planes', JSON.stringify(a)); }
+
 function savePlan() {
-  if (!currentPlanData || !currentFormData) return;
+  if (!planObj || !formData) return;
   const planes = getPlanes();
-  const distMeta = currentFormData.distancia_meta;
-  const semanas = currentFormData.semanas_disponibles;
   const plan = {
     id: Date.now() + '-' + Math.random().toString(36).slice(2),
-    nombre: currentFormData.nombre_plan,
-    distancia_meta: distMeta,
-    fecha_creacion: new Date().toISOString().slice(0, 10),
-    semanas: semanas,
-    perfil_resumen: `${currentFormData.nombre}, ${currentFormData.edad} años, ${distMeta}`,
-    plan_completo: currentPlanData,
-    datos_corredor: { ...currentFormData }
+    nombre: formData.nombrePlan,
+    distMeta: formData.distMeta,
+    fechaCreacion: new Date().toISOString().slice(0,10),
+    totalW: planObj.totalW,
+    perfil: `${formData.nombre}, ${formData.edad} años`,
+    planObj: planObj,
+    formData: formData,
   };
   planes.unshift(plan);
   setPlanes(planes);
-  const btn = document.getElementById('btn-save-plan');
+  const btn = document.getElementById('bsave');
   btn.disabled = true;
   btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Plan guardado';
-  btn.style.background = 'var(--success)';
+  btn.style.background = 'var(--ok)';
   showToast('¡Plan guardado correctamente!');
 }
 
 function deletePlan(id) {
-  const planes = getPlanes().filter(p => p.id !== id);
-  setPlanes(planes);
+  setPlanes(getPlanes().filter(p => p.id !== id));
   renderHistory();
   showToast('Plan eliminado');
 }
 
-function viewSavedPlan(id) {
-  const plan = getPlanes().find(p => p.id === id);
-  if (!plan) return;
-  currentPlanData = plan.plan_completo;
-  currentFormData = plan.datos_corredor;
-  renderPlan(plan.plan_completo, plan.datos_corredor);
-  document.getElementById('btn-save-plan').disabled = true;
-  document.getElementById('btn-save-plan').innerHTML = '<i class="fa-solid fa-circle-check"></i> Ya guardado';
-  document.getElementById('btn-save-plan').style.background = '#444';
+function viewPlan(id) {
+  const p = getPlanes().find(p => p.id === id);
+  if (!p) return;
+  planObj = p.planObj; formData = p.formData;
+  // Re-link formData inside planObj
+  planObj.d = formData;
+  renderPlan(planObj, formData);
+  const btn = document.getElementById('bsave');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Ya guardado';
+  btn.style.background = '#444';
   showScreen('plan');
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  HISTORY
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 function renderHistory() {
   const planes = getPlanes();
-  const container = document.getElementById('history-list');
-  if (planes.length === 0) {
-    container.innerHTML = `<div class="empty-state">
-      <i class="fa-solid fa-person-running"></i>
-      <p>Aún no tienes planes guardados.<br>¡Crea tu primero!</p>
-      <button class="btn btn-primary mt-4" onclick="startWizard()"><i class="fa-solid fa-circle-plus"></i> Crear nuevo plan</button>
-    </div>`;
+  const c = document.getElementById('hlist');
+  if (!planes.length) {
+    c.innerHTML = `<div class="empty"><i class="fa-solid fa-person-running"></i><p>Aún no tienes planes guardados.<br>¡Crea tu primero!</p><button class="btn bp mt4" onclick="startWizard()"><i class="fa-solid fa-circle-plus"></i> Crear nuevo plan</button></div>`;
     return;
   }
-  container.innerHTML = planes.map(plan => `
-    <div class="card mb-4 history-card" style="margin-bottom: 14px;">
-      <div class="history-card-header">
-        <div class="history-card-name">${escapeHtml(plan.nombre)}</div>
-        <div class="history-card-date">${plan.fecha_creacion}</div>
+  c.innerHTML = planes.map(p => `
+    <div class="card mb4 hc" style="margin-bottom:14px">
+      <div class="hch"><div class="hcn">${esc(p.nombre)}</div><div class="hcd">${p.fechaCreacion}</div></div>
+      <div class="hcm">
+        <span class="chip"><i class="fa-solid fa-bullseye"></i> ${esc(p.distMeta)}</span>
+        <span class="chip"><i class="fa-solid fa-calendar-week"></i> ${p.totalW} semanas</span>
+        <span class="chip"><i class="fa-solid fa-user"></i> ${esc(p.perfil)}</span>
       </div>
-      <div class="history-card-meta">
-        <span class="history-chip"><i class="fa-solid fa-bullseye"></i> ${escapeHtml(plan.distancia_meta)}</span>
-        <span class="history-chip"><i class="fa-solid fa-calendar-week"></i> ${escapeHtml(plan.semanas)}</span>
-        <span class="history-chip"><i class="fa-solid fa-user"></i> ${escapeHtml(plan.perfil_resumen)}</span>
+      <div class="hca">
+        <button class="btn bor bsm" onclick="viewPlan('${p.id}')"><i class="fa-solid fa-file-lines"></i> Ver plan</button>
+        <button class="btn bsm" style="border:2px solid #444;color:#777;background:transparent" onclick="confirmDel('${p.id}','${esc(p.nombre).replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
       </div>
-      <div class="history-card-actions">
-        <button class="btn btn-outline-red btn-sm" onclick="viewSavedPlan('${plan.id}')">
-          <i class="fa-solid fa-file-lines"></i> Ver plan
-        </button>
-        <button class="btn btn-outline btn-sm" style="border-color: #555; color: #888;" onclick="confirmDelete('${plan.id}', '${escapeHtml(plan.nombre).replace(/'/g,'\\&#39;')}')">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  MODAL
-// ═══════════════════════════════════════════════════
-function confirmDelete(id, nombre) {
-  document.getElementById('modal-title').textContent = 'Eliminar plan';
-  document.getElementById('modal-body').textContent = `¿Estás segura de que deseas eliminar "${nombre}"? Esta acción no se puede deshacer.`;
-  modalCallback = () => { deletePlan(id); closeModal(); };
+// ═══════════════════════════════════════════════════════════
+function confirmDel(id, nombre) {
+  document.getElementById('mtit').textContent = 'Eliminar plan';
+  document.getElementById('mbod').textContent = `¿Estás segura de que deseas eliminar "${nombre}"? Esta acción no se puede deshacer.`;
+  modalCb = () => { deletePlan(id); closeModal(); };
   document.getElementById('modal').classList.add('open');
 }
-
-function showErrorModal(title, body) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').textContent = body;
-  document.getElementById('modal-confirm').textContent = 'Cerrar';
-  document.getElementById('modal-confirm').className = 'btn btn-primary btn-full';
-  modalCallback = closeModal;
-  document.getElementById('modal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
-  document.getElementById('modal-confirm').textContent = 'Eliminar';
-  document.getElementById('modal-confirm').className = 'btn btn-danger btn-full';
-  modalCallback = null;
-}
-
-document.getElementById('modal-confirm').addEventListener('click', () => { if (modalCallback) modalCallback(); });
-document.getElementById('modal-cancel').addEventListener('click', closeModal);
+function closeModal() { document.getElementById('modal').classList.remove('open'); modalCb = null; }
+document.getElementById('mok').addEventListener('click', () => { if (modalCb) modalCb(); });
+document.getElementById('mcancel').addEventListener('click', closeModal);
 document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  TOAST
-// ═══════════════════════════════════════════════════
-let toastTimeout;
-function showToast(msg, type = 'success') {
-  const toast = document.getElementById('toast');
-  document.getElementById('toast-msg').textContent = msg;
-  toast.style.background = type === 'warning' ? 'var(--warning)' : 'var(--success)';
-  toast.classList.add('show');
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+// ═══════════════════════════════════════════════════════════
+let tto;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('tmsg').textContent = msg;
+  t.classList.add('on');
+  clearTimeout(tto); tto = setTimeout(() => t.classList.remove('on'), 3000);
 }
 
-// ═══════════════════════════════════════════════════
-//  SESSION STORAGE
-// ═══════════════════════════════════════════════════
-function saveWizardSession() {
-  try {
-    const data = {
-      step: currentStep,
-      nombre: document.getElementById('f-nombre')?.value,
-      edad: document.getElementById('f-edad')?.value,
-    };
-    sessionStorage.setItem('runcoach_wizard', JSON.stringify(data));
-  } catch(e) {}
+// ═══════════════════════════════════════════════════════════
+//  LOADING MESSAGES
+// ═══════════════════════════════════════════════════════════
+const lMsgs = ['Analizando tu perfil...','Calculando semanas de preparación...','Distribuyendo sesiones por día...','Ajustando ritmos e intensidades...','Generando consejos personalizados...'];
+function startLoadMsg() {
+  let i = 0;
+  document.getElementById('ltxt').textContent = lMsgs[0];
+  lInterval = setInterval(() => { i = (i+1) % lMsgs.length; document.getElementById('ltxt').textContent = lMsgs[i]; }, 500);
 }
-
-function restoreWizardData(data) {
-  // Minimal restore — just some fields
-  if (data.nombre) document.getElementById('f-nombre').value = data.nombre;
-  if (data.edad) document.getElementById('f-edad').value = data.edad;
-}
+function stopLoadMsg() { clearInterval(lInterval); }
 </script>
 </body>
 </html>
+HTMLEOF

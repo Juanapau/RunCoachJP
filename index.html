@@ -25,8 +25,9 @@
     h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em}
 
     /* screens */
-    .screen{display:none;min-height:100vh;padding-bottom:80px;animation:fiu .3s ease}
+    .screen{display:none;padding-bottom:80px;animation:fiu .3s ease}
     .screen.active{display:block}
+    #sc-splash{min-height:calc(100vh - 64px)}
     @keyframes fiu{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
     .wrap{max-width:600px;margin:0 auto;padding:0 16px}
 
@@ -52,7 +53,7 @@
     .cacc{border-left:4px solid var(--red)}
 
     /* form */
-    .fg{margin-bottom:18px}
+    .fg{margin-bottom:14px}
     .fl{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
     .fc{width:100%;background:var(--input);border:2px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:16px;transition:border-color .2s;min-height:48px;appearance:none}
     .fc:focus{outline:none;border-color:var(--red)}
@@ -84,13 +85,13 @@
     input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--red);cursor:pointer;border:none}
 
     /* progress */
-    .pw{margin-bottom:24px}
+    .pw{margin-bottom:16px}
     .pl{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:var(--muted)}
     .pt{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
     .pf{height:100%;background:var(--red);border-radius:2px;transition:width .4s ease}
 
     /* step header */
-    .sh{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+    .sh{display:flex;align-items:center;gap:14px;margin-bottom:16px}
     .si{width:52px;height:52px;border-radius:50%;background:rgba(192,57,43,.15);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;color:var(--red);font-size:22px;flex-shrink:0}
     .st{font-size:clamp(22px,5vw,28px);color:#fff;line-height:1}
     .ss{font-size:13px;color:var(--muted);margin-top:4px}
@@ -164,12 +165,11 @@
     .tips li::before{content:'•';color:var(--red);font-size:20px;line-height:1;flex-shrink:0}
 
     /* splash */
-    #sc-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 20px}
-    .slogo{font-size:64px;color:var(--red);margin-bottom:8px;animation:fiu .5s ease}
-    .stit{font-size:clamp(46px,12vw,64px);line-height:.95;margin-bottom:8px}
-    .ssub{font-size:15px;color:var(--muted);margin-bottom:16px}
-    .sdesc{font-size:14px;color:#555;max-width:320px;line-height:1.6;margin-bottom:28px}
-    .sacts{display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px}
+    #sc-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 20px 0}
+    .slogo{font-size:56px;color:var(--red);margin-bottom:6px;animation:fiu .5s ease}
+    .stit{font-size:clamp(42px,11vw,60px);line-height:.95;margin-bottom:8px}
+    .sdesc{font-size:14px;color:#555;max-width:320px;line-height:1.6;margin-bottom:20px}
+    .sacts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
 
     /* section title */
     .sectit{font-size:clamp(22px,5vw,28px);margin-bottom:14px;display:flex;align-items:center;gap:10px}
@@ -179,8 +179,8 @@
     .csec{margin-top:32px;background:var(--card);border-radius:var(--r);padding:20px;border-left:4px solid var(--red)}
 
     /* empty */
-    .empty{text-align:center;padding:32px 20px;color:var(--muted)}
-    .empty i{font-size:48px;color:#333;margin-bottom:12px;display:block}
+    .empty{text-align:center;padding:24px 20px;color:var(--muted)}
+    .empty i{font-size:44px;color:#333;margin-bottom:10px;display:block}
     .empty p{font-size:15px;line-height:1.6}
 
     /* step nav */
@@ -242,7 +242,7 @@
      WIZARD
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-wizard">
-  <div class="wrap" style="padding-top:20px">
+  <div class="wrap" style="padding-top:14px">
     <div class="pw">
       <div class="pl"><span id="steplabel">Paso 1 de 8</span><span id="stepname">Perfil físico</span></div>
       <div class="pt"><div class="pf" id="pfill" style="width:12.5%"></div></div>
@@ -459,7 +459,7 @@
      HISTORY
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-history">
-  <div class="wrap" style="padding-top:20px">
+  <div class="wrap" style="padding-top:16px;padding-bottom:16px">
     <h2 class="sectit"><i class="fa-solid fa-list"></i> Mis Planes Guardados</h2>
     <div id="hlist"></div>
   </div>

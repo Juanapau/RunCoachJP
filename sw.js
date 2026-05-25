@@ -1,5 +1,5 @@
 // Service Worker para RunCoach PWA
-const CACHE_VERSION = 'runcoach-v1.0.0';
+const CACHE_VERSION = 'runcoach-v1.0.3';
 const CACHE_NAME = `runcoach-cache-${CACHE_VERSION}`;
 
 const CRITICAL_FILES = [

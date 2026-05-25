@@ -375,11 +375,21 @@
       <div class="fg" id="otra-wrap" style="display:none"><label class="fl">Especifica la distancia</label><input type="text" class="fc" id="f13b" placeholder="Ej: 50K trail"></div>
       <div class="fg"><label class="fl">Objetivo principal *</label>
         <div class="rg" id="rg-obj">
-          <label class="ro" onclick="selR(this,'rg-obj','terminar')"><input type="radio"><i class="fa-solid fa-flag-checkered tr"></i> Solo terminar</label>
-          <label class="ro" onclick="selR(this,'rg-obj','tiempo'); toggleTiempo()"><input type="radio"><i class="fa-solid fa-stopwatch tr"></i> Tiempo específico</label>
+          <label class="ro" onclick="selR(this,'rg-obj','terminar'); toggleObjExtra()"><input type="radio"><i class="fa-solid fa-flag-checkered tr"></i> Solo terminar</label>
+          <label class="ro" onclick="selR(this,'rg-obj','tiempo'); toggleObjExtra()"><input type="radio"><i class="fa-solid fa-stopwatch tr"></i> Tiempo específico</label>
+          <label class="ro" onclick="selR(this,'rg-obj','pace'); toggleObjExtra()"><input type="radio"><i class="fa-solid fa-gauge-high tr"></i> Pace objetivo</label>
         </div>
         <div class="ferr" id="e-obj">Selecciona tu objetivo</div></div>
-      <div class="fg" id="tobj-wrap" style="display:none"><label class="fl">Tiempo objetivo</label><input type="text" class="fc" id="f14" placeholder="Ej: 1:45:00 para media maratón"></div>
+      <div class="fg" id="tobj-wrap" style="display:none">
+        <label class="fl">Tiempo objetivo</label>
+        <input type="text" class="fc" id="f14" placeholder="Ej: 1:45:00 para media maratón">
+        <div class="fhint">Formato hh:mm:ss o mm:ss</div>
+      </div>
+      <div class="fg" id="pobj-wrap" style="display:none">
+        <label class="fl">Pace objetivo (min/km)</label>
+        <input type="text" class="fc" id="f14b" placeholder="Ej: 5:30 min/km">
+        <div class="fhint">El ritmo promedio que quieres mantener en la carrera</div>
+      </div>
       <div class="fg"><label class="fl">Fecha de la carrera</label><input type="date" class="fc" id="f15" onchange="calcSem()"></div>
       <div id="sem-info" style="display:none" class="card cacc mt4">
         <div style="font-size:14px;color:var(--muted)">Tiempo disponible</div>
@@ -401,12 +411,37 @@
           <button type="button" class="dt" data-day="Domingo" onclick="togDay(this)">D</button>
         </div>
         <div class="ferr" id="e-dias">Selecciona al menos 2 días</div></div>
-      <div class="fg"><label class="fl">Duración máxima por sesión *</label>
-        <select class="fc" id="f16" onchange="toggleOtraDuracion()"><option value="">Seleccionar...</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">1 hora</option><option value="90">1 hora 30 minutos</option><option value="120">2 horas o más</option><option value="otro">Otro...</option></select>
-        <div class="ferr" id="e16">Selecciona la duración</div></div>
+      <div class="fg">
+        <label class="fl">Tiempo disponible en días de semana *</label>
+        <div class="fhint" style="margin-bottom:8px">Rodajes suaves, series, fuerza — los días entre semana</div>
+        <select class="fc" id="f16" onchange="toggleOtraDuracion()">
+          <option value="">Seleccionar...</option>
+          <option value="30">Hasta 30 minutos</option>
+          <option value="45">Hasta 45 minutos</option>
+          <option value="60">Hasta 1 hora</option>
+          <option value="75">Hasta 1h 15min</option>
+          <option value="90">Hasta 1h 30min</option>
+          <option value="otro">Otro...</option>
+        </select>
+        <div class="ferr" id="e16">Selecciona la duración para días de semana</div>
+      </div>
       <div class="fg" id="otra-duracion-wrap" style="display:none">
-        <label class="fl">Especifica los minutos</label>
-        <input type="number" class="fc" id="f16b" placeholder="Ej: 75" min="15" max="240">
+        <label class="fl">Especifica los minutos (días de semana)</label>
+        <input type="number" class="fc" id="f16b" placeholder="Ej: 50" min="15" max="180">
+      </div>
+      <div class="fg">
+        <label class="fl">Tiempo disponible para tiradas largas *</label>
+        <div class="fhint" style="margin-bottom:8px">La tirada larga va los sábados o domingos y requiere más tiempo</div>
+        <select class="fc" id="f16c">
+          <option value="">Seleccionar...</option>
+          <option value="60">Hasta 1 hora</option>
+          <option value="90">Hasta 1h 30min</option>
+          <option value="120">Hasta 2 horas</option>
+          <option value="150">Hasta 2h 30min</option>
+          <option value="180">Hasta 3 horas</option>
+          <option value="240">Más de 3 horas</option>
+        </select>
+        <div class="ferr" id="e16c">Selecciona la duración para tiradas largas</div>
       </div>
       <div class="fg"><label class="fl">Horario preferido *</label>
         <div class="rg" id="rg-hor">
@@ -466,12 +501,17 @@
         <div class="rg" id="rg-est"><label class="ro" onclick="selR(this,'rg-est','bajo')"><input type="radio">😌 Bajo</label><label class="ro" onclick="selR(this,'rg-est','medio')"><input type="radio">😐 Medio</label><label class="ro" onclick="selR(this,'rg-est','alto')"><input type="radio">😰 Alto</label></div>
         <div class="ferr" id="e-est">Selecciona tu nivel de estrés</div></div>
       <div class="fg"><label class="fl">Otras actividades físicas</label>
+        <div class="fhint" style="margin-bottom:8px">Puedes seleccionar todas las que practiques</div>
         <div class="cg" id="cg-act">
           <label class="co" onclick="togC(this)"><input type="checkbox">🚴 Ciclismo</label>
           <label class="co" onclick="togC(this)"><input type="checkbox">🏊 Natación</label>
           <label class="co" onclick="togC(this)"><input type="checkbox">🧘 Yoga</label>
           <label class="co" onclick="togC(this)"><input type="checkbox">💪 Pesas</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">❌ Ninguno</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🤸 Pilates</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">⚽ Deportes de equipo</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🥊 Artes marciales</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">🚶 Caminata</label>
+          <label class="co" onclick="togC(this)"><input type="checkbox">❌ Ninguna</label>
         </div></div>
       <div class="fg"><label class="fl">Alimentación general *</label>
         <select class="fc" id="f21"><option value="">Seleccionar...</option><option>Omnívora</option><option>Vegetariana</option><option>Vegana</option><option>Sin restricciones especiales</option></select>
@@ -664,7 +704,7 @@ function valStep(s) {
     const days = getDays();
     const ed = document.getElementById('e-dias');
     if (days.length < 2) { ed.classList.add('on'); ok = false; } else ed.classList.remove('on');
-    c(req('f16','e16')); c(reqR('rg-hor','e-hor'));
+    c(req('f16','e16')); c(req('f16c','e16c')); c(reqR('rg-hor','e-hor'));
   }
   if (s === 5) { c(reqR('rg-les','e-les')); c(reqR('rg-cir','e-cir')); c(reqR('rg-aut','e-aut')); }
   if (s === 6) { c(reqR('rg-top','e-top')); c(reqR('rg-gym','e-gym')); c(req('f19','e19')); }
@@ -703,9 +743,16 @@ function getDuracion() {
   return +v || 60;
 }
 
-function toggleTiempo() {
-  document.getElementById('tobj-wrap').style.display = gR('rg-obj') === 'tiempo' ? 'block' : 'none';
+function getDuracionLargo() {
+  return +document.getElementById('f16c').value || 120;
 }
+
+function toggleObjExtra() {
+  const val = gR('rg-obj');
+  document.getElementById('tobj-wrap').style.display = val === 'tiempo' ? 'block' : 'none';
+  document.getElementById('pobj-wrap').style.display = val === 'pace'   ? 'block' : 'none';
+}
+function toggleTiempo() { toggleObjExtra(); } // backward compat
 function togLes() { document.getElementById('les-det').style.display = gR('rg-les') === 'si' ? 'block' : 'none'; }
 function togCir() { document.getElementById('cir-det').style.display = gR('rg-cir') === 'si' ? 'block' : 'none'; }
 function calcSem() {
@@ -726,9 +773,13 @@ function updRes() {
   const dm = document.getElementById('f13').value;
   const obj = gR('rg-obj');
   const dias = getDays().length;
+  const objLabel = obj==='terminar' ? 'Solo terminar'
+    : obj==='tiempo' ? `Tiempo: ${document.getElementById('f14').value||'—'}`
+    : obj==='pace'   ? `Pace: ${document.getElementById('f14b').value||'—'}`
+    : '—';
   document.getElementById('resumen').innerHTML =
     `<div>👤 <b>${document.getElementById('f1').value||'—'}</b></div>
-     <div>🎯 ${dm||'—'} · ${obj==='terminar'?'Solo terminar':obj==='tiempo'?'Tiempo específico':'—'}</div>
+     <div>🎯 ${dm||'—'} · ${objLabel}</div>
      <div>📅 ${dias} días/semana</div>`;
 }
 
@@ -754,10 +805,12 @@ function collect() {
     distMetaVal: dm,
     objetivo: gR('rg-obj'),
     tiempoObj: document.getElementById('f14').value,
+    paceObj: document.getElementById('f14b').value,
     fechaCarrera: document.getElementById('f15').value,
     semanasDisp: getSemanas(),
     dias: getDays(),
     durMax: getDuracion(),
+    durMaxLargo: getDuracionLargo(),
     horario: gR('rg-hor'),
     lesion: gR('rg-les') === 'si',
     lesionDesc: document.getElementById('f17').value,
@@ -820,18 +873,33 @@ function parsePaceSec(str) {
 }
 
 function estimatePace(d) {
-  // Estimate base easy pace from experience and current km/week
+  // If pace objective provided, use it as the race pace and derive training paces
+  if (d.objetivo === 'pace' && d.paceObj) {
+    const racePace = parsePaceSec(d.paceObj);
+    if (racePace > 0) return Math.round(racePace * 1.15); // easy pace = race pace + 15%
+  }
+  // If time objective, derive pace from time + distance
+  if (d.objetivo === 'tiempo' && d.tiempoObj) {
+    const parts = d.tiempoObj.match(/(\d+):(\d+)(?::(\d+))?/);
+    if (parts) {
+      const totalSec = parts[3]
+        ? (+parts[1]*3600 + +parts[2]*60 + +parts[3])
+        : (+parts[1]*60 + +parts[2]);
+      const distKm = {'5K':5,'10K':10,'15K':15,'21K':21,'42K':42}[d.distMeta] || 10;
+      const racePaceSec = Math.round(totalSec / distKm);
+      if (racePaceSec > 0) return Math.round(racePaceSec * 1.15);
+    }
+  }
+  // Default: estimate from experience and km/week
   const exp = d.experiencia;
   const km = d.kmSemanales;
   let baseSec;
-  if (exp === 'principiante') baseSec = 480; // 8:00
-  else if (exp === 'basico') baseSec = 420; // 7:00
-  else if (exp === 'intermedio') baseSec = 360; // 6:00
-  else baseSec = 320; // 5:20 (avanzado)
-  // Adjust by km/week
+  if (exp === 'principiante') baseSec = 480;
+  else if (exp === 'basico') baseSec = 420;
+  else if (exp === 'intermedio') baseSec = 360;
+  else baseSec = 320;
   if (km > 60) baseSec -= 30;
   else if (km < 15) baseSec += 30;
-  // If they provided their pace, use that
   const provided = parsePaceSec(d.ritmoHabitual);
   if (provided > 0) return provided;
   return baseSec;
@@ -1057,9 +1125,17 @@ function buildTips(d) {
   if (d.lesion) tips.push(`⚠️ ${d.lesionDesc ? 'Dada tu lesión (' + d.lesionDesc + ')' : 'Dado que reportas una lesión'}: escucha siempre a tu cuerpo. Si sientes dolor agudo, detente y consulta a un fisioterapeuta antes de continuar.`);
   if (d.sueno < 7) tips.push(`Procura dormir mínimo 7-8 horas. La recuperación ocurre durante el sueño — es tan importante como el entrenamiento.`);
   if (d.estres === 'alto') tips.push(`Con estrés alto, el cuerpo tiene menos capacidad de recuperación. En semanas muy exigentes, prioriza el descanso sobre cumplir km a toda costa.`);
-  tips.push(`La nutrición en los días de rodaje largo es clave: carbohidratos complejos el día anterior y una comida liviana 1-2 horas antes de correr.`);
+  // Activities-specific tips
+  const acts = d.actividades || '';
+  if (acts.includes('Yoga')) tips.push(`El yoga que practicas es un complemento ideal para el running: prioriza posturas de cadera, isquiotibiales y movilidad de tobillo los días de descanso activo.`);
+  if (acts.includes('Ciclismo') || acts.includes('Natación')) tips.push(`El ciclismo/natación que practicas es excelente trabajo aeróbico de bajo impacto. Úsalo en días de descanso activo para mantener la base cardiovascular sin sobrecargar las piernas.`);
+  if (acts.includes('Pesas') || acts.includes('Pilates')) tips.push(`El trabajo de fuerza que realizas complementa perfectamente el running. Enfócate en glúteos, core y estabilizadores. Evita sesiones intensas de piernas el día anterior a la tirada larga.`);
+  if (acts.includes('Deportes de equipo') || acts.includes('Artes marciales')) tips.push(`Ten en cuenta que los deportes de equipo o artes marciales añaden carga de trabajo. En semanas de alta carga de running, reduce la intensidad en esas actividades para no acumular fatiga.`);
+  // Pace/time objective tip
+  if (d.objetivo === 'pace' && d.paceObj) tips.push(`Tu pace objetivo es ${d.paceObj}. Los rodajes suaves deben hacerse significativamente más lentos (aprox. 1-1:30 min/km más lento) para que el cuerpo pueda adaptarse sin lesionarse.`);
+  if (d.objetivo === 'tiempo' && d.tiempoObj) tips.push(`Para lograr tu tiempo objetivo de ${d.tiempoObj}, los entrenamientos de calidad (series, progresiones) serán fundamentales. No los omitas aunque cuesten más esfuerzo.`);
   if (!d.relojGPS) tips.push(`Sin reloj GPS, usa la "prueba del habla": si puedes mantener una conversación mientras corres, estás en zona aeróbica suave. Si no puedes, vas demasiado rápido.`);
-  if (d.gimnasio) tips.push(`El trabajo de fuerza complementa al running: enfócate en glúteos, core y estabilizadores de tobillo. Evita pesas pesadas de piernas el día anterior a una tirada larga.`);
+  if (d.gimnasio) tips.push(`Aprovecha el gimnasio especialmente para trabajo de core y fuerza funcional: sentadillas, peso muerto rumano, elevaciones de gemelos y planchas son tus mejores aliados.`);
   tips.push(`El día de la carrera: no estrenes zapatillas, no cambies tu rutina de alimentación, calienta 10-15 minutos y empieza más lento que tu ritmo objetivo — guarda energía para la segunda mitad.`);
   return tips.slice(0, 7);
 }

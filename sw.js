@@ -1,47 +1,71 @@
-const CACHE_NAME = 'runcoach-v2';
-const BASE = '/RunCoachJP/';
+// Service Worker para RunCoach PWA
+const CACHE_VERSION = 'runcoach-v1.0.0';
+const CACHE_NAME = `runcoach-cache-${CACHE_VERSION}`;
 
-const ASSETS = [
-  BASE,
-  BASE + 'index.html',
-  BASE + 'manifest.json',
-  BASE + 'icon-192.png',
-  BASE + 'icon-512.png'
+const CRITICAL_FILES = [
+  '/RunCoachJP/',
+  '/RunCoachJP/index.html',
+  '/RunCoachJP/manifest.json',
+  '/RunCoachJP/icon-192.png',
+  '/RunCoachJP/icon-512.png'
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
-  );
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  const isOwn = url.pathname.startsWith(BASE);
-
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(resp => {
-        if (resp && resp.status === 200 && isOwn) {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-        }
-        return resp;
-      }).catch(() => caches.match(BASE + 'index.html'));
+self.addEventListener('install', (event) => {
+  console.log('📦 RunCoach SW: Instalando...');
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('📦 RunCoach SW: Cacheando archivos críticos');
+      return cache.addAll(CRITICAL_FILES);
     })
   );
 });
+
+self.addEventListener('activate', (event) => {
+  console.log('✅ RunCoach SW: Activando...');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('🗑️ RunCoach SW: Eliminando caché antiguo:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          if (event.request.headers.get('accept').includes('text/html')) {
+            return caches.match('/RunCoachJP/index.html');
+          }
+        });
+      })
+  );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+console.log('✅ RunCoach Service Worker cargado');

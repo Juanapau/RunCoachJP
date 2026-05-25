@@ -513,11 +513,11 @@
       <div class="sh"><div class="si"><i class="fa-solid fa-mountain-sun"></i></div><div><div class="st">Entorno y recursos</div><div class="ss">Tu ambiente de entrenamiento</div></div></div>
       <div class="fg"><label class="fl">Superficie habitual</label>
         <div class="cg" id="cg-sup">
-          <label class="co" onclick="togC(this)"><input type="checkbox">🛣️ Asfalto</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🌿 Tierra</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🏟️ Pista</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🏃 Cinta</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🔄 Mixto</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🛣️ Asfalto</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🌿 Tierra</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🏟️ Pista</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🏃 Cinta</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🔄 Mixto</label>
         </div></div>
       <div class="fg"><label class="fl">Topografía de tu zona *</label>
         <div class="rg" id="rg-top"><label class="ro" onclick="selR(this,'rg-top','plano')"><input type="radio">⬛ Plano</label><label class="ro" onclick="selR(this,'rg-top','ondulado')"><input type="radio">〰️ Ondulado</label><label class="ro" onclick="selR(this,'rg-top','montañoso')"><input type="radio">⛰️ Montañoso</label></div>
@@ -541,15 +541,15 @@
       <div class="fg"><label class="fl">Otras actividades físicas</label>
         <div class="fhint" style="margin-bottom:8px">Puedes seleccionar todas las que practiques</div>
         <div class="cg" id="cg-act">
-          <label class="co" onclick="togC(this)"><input type="checkbox">🚴 Ciclismo</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🏊 Natación</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🧘 Yoga</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">💪 Pesas</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🤸 Pilates</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">⚽ Deportes de equipo</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🥊 Artes marciales</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">🚶 Caminata</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">❌ Ninguna</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🚴 Ciclismo</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🏊 Natación</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🧘 Yoga</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">💪 Pesas</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🤸 Pilates</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">⚽ Deportes de equipo</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🥊 Artes marciales</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🚶 Caminata</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">❌ Ninguna</label>
         </div></div>
       <div class="fg"><label class="fl">Alimentación general *</label>
         <select class="fc" id="f21"><option value="">Seleccionar...</option><option>Omnívora</option><option>Vegetariana</option><option>Vegana</option><option>Sin restricciones especiales</option></select>
@@ -567,11 +567,11 @@
         <div class="ferr" id="e-mfc">Selecciona una opción</div></div>
       <div class="fg"><label class="fl">Apps que usas</label>
         <div class="cg" id="cg-apps">
-          <label class="co" onclick="togC(this)"><input type="checkbox">Strava</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">Garmin</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">Nike Run</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">Adidas</label>
-          <label class="co" onclick="togC(this)"><input type="checkbox">Ninguna</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">Strava</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">Garmin</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">Nike Run</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">Adidas</label>
+          <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">Ninguna</label>
         </div></div>
       <div class="divider"></div>
       <div class="fg"><label class="fl">Nombre para este plan *</label><input type="text" class="fc" id="f22" placeholder="Ej: Mi plan Maratón SD 2025"><div class="fhint">Aparecerá en tu historial</div><div class="ferr" id="e22">Ingresa un nombre para el plan</div></div>
@@ -761,18 +761,25 @@ function selR(el, gid, val) {
   if (er) er.classList.remove('on');
 }
 function gR(gid) { const s = document.querySelector(`#${gid} .ro.sel`); return s ? s.dataset.v : ''; }
-function togC(el, groupId) {
-  // Si se selecciona "Ninguna", deselecciona todo lo demás
+function togC(el) {
+  // Prevent double-toggle from the hidden checkbox inside the label
   const text = el.textContent.trim();
-  if (text.includes('Ninguna')) {
-    const group = el.closest('.cg');
-    if (group) group.querySelectorAll('.co').forEach(o => { if (o !== el) o.classList.remove('sel'); });
+  const isNinguna = text.includes('Ninguna');
+  const group = el.closest('.cg');
+
+  if (isNinguna) {
+    // If already selected, deselect it; otherwise select only this one
+    const wasSelected = el.classList.contains('sel');
+    if (group) group.querySelectorAll('.co').forEach(o => o.classList.remove('sel'));
+    if (!wasSelected) el.classList.add('sel');
   } else {
-    // Si hay otra seleccionada, deselecciona "Ninguna"
-    const group = el.closest('.cg');
-    if (group) group.querySelectorAll('.co').forEach(o => { if (o.textContent.trim().includes('Ninguna')) o.classList.remove('sel'); });
+    // Deselect "Ninguna" if present
+    if (group) group.querySelectorAll('.co').forEach(o => {
+      if (o.textContent.trim().includes('Ninguna')) o.classList.remove('sel');
+    });
+    // Toggle this one
+    el.classList.toggle('sel');
   }
-  el.classList.toggle('sel');
 }
 function gC(gid) { return [...document.querySelectorAll(`#${gid} .co.sel`)].map(e => e.textContent.trim()); }
 function togDay(el) { el.classList.toggle('sel'); document.getElementById('e-dias').classList.remove('on'); }
@@ -1235,35 +1242,34 @@ function fmtPaceRange(sec, f) {
 }
 
 function formatGarmin(s, p, bps, useGPS) {
-  const pace = (f) => useGPS ? fmtPace(bps, f) : null;
-  const paceRange = (f) => useGPS ? fmtPaceRange(bps, f) : null;
+  // Extract km robustly - detail format is "8 km · 6:30 min/km"
+  const kmMatch = s.detail.match(/^(\d+(?:\.\d+)?)\s*km/);
+  const km = kmMatch ? parseFloat(kmMatch[1]) : 5;
 
   const steps = [];
 
-  if (s.badge === 'bs') { // Rodaje suave
-    const km = parseFloat(s.detail);
+  if (s.badge === 'bs') {
     const warmKm = Math.max(1, Math.round(km * 0.1));
-    const mainKm = km - warmKm * 2;
-    const estTotal = fmtTime(Math.round(km * bps * 1.0));
+    const mainKm = Math.max(1, km - warmKm * 2);
+    const estTotal = fmtTime(Math.round(km * bps));
     steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.05) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(warmKm*Math.round(bps*1.05)) });
     steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,0.95) : null, paceRange: useGPS ? fmtPaceRange(bps,0.95) : null, estTime: fmtTime(mainKm*Math.round(bps*0.95)) });
     steps.push({ color:'green', name:'Enfriamiento',  dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.05) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(warmKm*Math.round(bps*1.05)) });
     return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
   }
 
-  if (s.badge === 'bl') { // Tirada larga
-    const km = parseFloat(s.detail);
+  if (s.badge === 'bl') {
     const warmKm = Math.max(2, Math.round(km * 0.1));
     const coolKm = Math.max(1, Math.round(km * 0.05));
-    const mainKm = km - warmKm - coolKm;
+    const mainKm = Math.max(1, km - warmKm - coolKm);
     const estTotal = fmtTime(Math.round(km * bps * 1.05));
-    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.1) : null,  paceRange: useGPS ? fmtPaceRange(bps,1.1)  : null, estTime: fmtTime(warmKm*Math.round(bps*1.1)) });
-    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.05): null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(mainKm*Math.round(bps*1.05)) });
-    steps.push({ color:'green', name:'Enfriamiento',  dist:`${coolKm} km`, pace: useGPS ? fmtPace(bps,1.1) : null,  paceRange: useGPS ? fmtPaceRange(bps,1.1)  : null, estTime: fmtTime(coolKm*Math.round(bps*1.1)) });
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.1)  : null, paceRange: useGPS ? fmtPaceRange(bps,1.1)  : null, estTime: fmtTime(warmKm*Math.round(bps*1.1)) });
+    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.05) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(mainKm*Math.round(bps*1.05)) });
+    steps.push({ color:'green', name:'Enfriamiento',  dist:`${coolKm} km`, pace: useGPS ? fmtPace(bps,1.1)  : null, paceRange: useGPS ? fmtPaceRange(bps,1.1)  : null, estTime: fmtTime(coolKm*Math.round(bps*1.1)) });
     return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
   }
 
-  if (s.badge === 'bi') { // Series/Intervalos/Fartlek
+  if (s.badge === 'bi') {
     const m = s.detail.match(/(\d+)[×x](\d+)/);
     const reps = m ? +m[1] : 4, dist = m ? +m[2] : 800;
     const warmM = 600, coolM = 600, recM = 400;
@@ -1275,8 +1281,8 @@ function formatGarmin(s, p, bps, useGPS) {
     steps.push({
       type:'repeat', reps,
       substeps: [
-        { color:'blue', name:'Carrera',       dist:`${dist} m`, pace: useGPS ? fmtPace(bps,0.75) : null, paceRange: useGPS ? fmtPaceRange(bps,0.75) : null, estTime: fmtTime(repTimeSec) },
-        { color:'gray', name:'Recuperación',  dist:`${recM} m`, pace: null, paceRange: null, estTime: fmtTime(recTimeSec) },
+        { color:'blue', name:'Carrera',      dist:`${dist} m`, pace: useGPS ? fmtPace(bps,0.75) : null, paceRange: useGPS ? fmtPaceRange(bps,0.75) : null, estTime: fmtTime(repTimeSec) },
+        { color:'gray', name:'Recuperación', dist:`${recM} m`, pace: null, paceRange: null, estTime: fmtTime(recTimeSec) },
       ]
     });
     steps.push({ color:'green', name:'Enfriamiento', dist:`${coolM} m`, pace:null, paceRange:null, estTime: fmtTime(Math.round(coolM/1000*bps)) });
@@ -1287,9 +1293,10 @@ function formatGarmin(s, p, bps, useGPS) {
 }
 
 function formatStrava(s, p, bps, useGPS) {
-  // Strava usa descripción en texto con segmentos
+  const kmMatch = s.detail.match(/^(\d+(?:\.\d+)?)\s*km/);
+  const km = kmMatch ? parseFloat(kmMatch[1]) : 5;
+
   if (s.badge === 'bs' || s.badge === 'bl') {
-    const km = parseFloat(s.detail);
     const pace = useGPS ? fmtPace(bps, s.badge==='bl'?1.05:0.95) : 'ritmo suave';
     return {
       type: 'strava',

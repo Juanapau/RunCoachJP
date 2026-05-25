@@ -275,6 +275,26 @@
     .done-check{color:var(--ok);font-size:13px;margin-left:4px}
     .skip-check{color:var(--acc-b);font-size:13px;margin-left:4px}
 
+    /* app format cards */
+    .gmt-card{margin-top:10px;background:#1a1a2e;border:1px solid rgba(38,198,218,.2);border-radius:10px;overflow:hidden;font-family:'Nunito',sans-serif}
+    .gmt-header{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+    .gmt-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--pri);margin-bottom:8px}
+    .gmt-summary{display:flex;gap:32px}
+    .gmt-sum-val{font-size:22px;font-weight:800;color:#fff;display:block}
+    .gmt-sum-lbl{font-size:11px;color:#607D8B;margin-top:1px}
+    .gmt-steps-label{font-size:12px;font-weight:700;color:#607D8B;padding:10px 14px 4px;text-transform:uppercase;letter-spacing:.06em}
+    .gmt-steps{padding:0 8px 8px}
+    .gmt-step{display:flex;align-items:stretch;background:#222235;border-radius:8px;margin-bottom:6px;overflow:hidden}
+    .gmt-sub{margin:3px 0;background:#1e1e30}
+    .gmt-color{width:5px;flex-shrink:0}
+    .gmt-step-info{padding:10px 12px;flex:1}
+    .gmt-step-name{font-size:15px;font-weight:700;color:#fff;margin-bottom:2px}
+    .gmt-step-dist{font-size:13px;color:#9e9e9e;margin-bottom:3px}
+    .gmt-step-pace{font-size:13px;color:#ccc;margin-bottom:3px;line-height:1.4}
+    .gmt-step-time{font-size:12px;color:#607D8B}
+    .gmt-repeat{background:#1e1e2e;border:1px solid rgba(255,255,255,.06);border-radius:8px;margin-bottom:6px;overflow:hidden}
+    .gmt-repeat-label{font-size:13px;font-weight:700;color:#FFB74D;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:6px}
+
     /* utils */
     .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
     .tr{color:var(--pri)} .tm{color:var(--muted)} .tsm{font-size:13px}
@@ -723,7 +743,19 @@ function selR(el, gid, val) {
   if (er) er.classList.remove('on');
 }
 function gR(gid) { const s = document.querySelector(`#${gid} .ro.sel`); return s ? s.dataset.v : ''; }
-function togC(el) { el.classList.toggle('sel'); }
+function togC(el, groupId) {
+  // Si se selecciona "Ninguna", deselecciona todo lo demás
+  const text = el.textContent.trim();
+  if (text.includes('Ninguna')) {
+    const group = el.closest('.cg');
+    if (group) group.querySelectorAll('.co').forEach(o => { if (o !== el) o.classList.remove('sel'); });
+  } else {
+    // Si hay otra seleccionada, deselecciona "Ninguna"
+    const group = el.closest('.cg');
+    if (group) group.querySelectorAll('.co').forEach(o => { if (o.textContent.trim().includes('Ninguna')) o.classList.remove('sel'); });
+  }
+  el.classList.toggle('sel');
+}
 function gC(gid) { return [...document.querySelectorAll(`#${gid} .co.sel`)].map(e => e.textContent.trim()); }
 function togDay(el) { el.classList.toggle('sel'); document.getElementById('e-dias').classList.remove('on'); }
 function getDays() { return [...document.querySelectorAll('#dts .dt.sel')].map(e => e.dataset.day); }
@@ -1141,8 +1173,208 @@ function buildTips(d) {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  ALTERNATIVES FOR SKIPPED SESSIONS
+//  APP FORMAT SYSTEM
 // ═══════════════════════════════════════════════════════════
+
+function detectApp(apps) {
+  if (!apps) return 'generic';
+  const a = apps.toLowerCase();
+  if (a.includes('garmin')) return 'garmin';
+  if (a.includes('strava')) return 'strava';
+  if (a.includes('nike')) return 'nike';
+  return 'generic';
+}
+
+function formatSession(s, appType, pace, basePaceSec, useGPS) {
+  const p = (f, lbl) => {
+    if (!useGPS) return `Esfuerzo ${lbl}`;
+    const sec = Math.round(basePaceSec * f);
+    const m = Math.floor(sec/60), sg = sec%60;
+    const lo = Math.round(basePaceSec * (f-0.02)), hi = Math.round(basePaceSec * (f+0.02));
+    const fmt = s => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
+    return `${fmt(sec)} min/km (${fmt(lo)} - ${fmt(hi)})`;
+  };
+
+  if (appType === 'garmin') return formatGarmin(s, p, basePaceSec, useGPS);
+  if (appType === 'strava') return formatStrava(s, p, basePaceSec, useGPS);
+  if (appType === 'nike')   return formatNike(s, p, basePaceSec, useGPS);
+  return null; // use default rendering
+}
+
+function fmtTime(sec) {
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  return h > 0 ? `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`
+               : `${m}:${s.toString().padStart(2,'0')}`;
+}
+function fmtPace(sec, f) {
+  const s = Math.round(sec*f);
+  return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')} min/km`;
+}
+function fmtPaceRange(sec, f) {
+  const lo = Math.round(sec*(f-0.02)), hi = Math.round(sec*(f+0.02));
+  const fmt = v => `${Math.floor(v/60)}:${(v%60).toString().padStart(2,'0')}`;
+  return `${fmt(lo)} - ${fmt(hi)} min/km`;
+}
+
+function formatGarmin(s, p, bps, useGPS) {
+  const pace = (f) => useGPS ? fmtPace(bps, f) : null;
+  const paceRange = (f) => useGPS ? fmtPaceRange(bps, f) : null;
+
+  const steps = [];
+
+  if (s.badge === 'bs') { // Rodaje suave
+    const km = parseFloat(s.detail);
+    const warmKm = Math.max(1, Math.round(km * 0.1));
+    const mainKm = km - warmKm * 2;
+    const estTotal = fmtTime(Math.round(km * bps * 1.0));
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.05) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(warmKm*Math.round(bps*1.05)) });
+    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,0.95) : null, paceRange: useGPS ? fmtPaceRange(bps,0.95) : null, estTime: fmtTime(mainKm*Math.round(bps*0.95)) });
+    steps.push({ color:'green', name:'Enfriamiento',  dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.05) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(warmKm*Math.round(bps*1.05)) });
+    return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
+  }
+
+  if (s.badge === 'bl') { // Tirada larga
+    const km = parseFloat(s.detail);
+    const warmKm = Math.max(2, Math.round(km * 0.1));
+    const coolKm = Math.max(1, Math.round(km * 0.05));
+    const mainKm = km - warmKm - coolKm;
+    const estTotal = fmtTime(Math.round(km * bps * 1.05));
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.1) : null,  paceRange: useGPS ? fmtPaceRange(bps,1.1)  : null, estTime: fmtTime(warmKm*Math.round(bps*1.1)) });
+    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.05): null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(mainKm*Math.round(bps*1.05)) });
+    steps.push({ color:'green', name:'Enfriamiento',  dist:`${coolKm} km`, pace: useGPS ? fmtPace(bps,1.1) : null,  paceRange: useGPS ? fmtPaceRange(bps,1.1)  : null, estTime: fmtTime(coolKm*Math.round(bps*1.1)) });
+    return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
+  }
+
+  if (s.badge === 'bi') { // Series/Intervalos/Fartlek
+    const m = s.detail.match(/(\d+)[×x](\d+)/);
+    const reps = m ? +m[1] : 4, dist = m ? +m[2] : 800;
+    const warmM = 600, coolM = 600, recM = 400;
+    const totalM = warmM + reps*(dist+recM) + coolM;
+    const repTimeSec = Math.round(dist/1000 * bps * 0.75);
+    const recTimeSec = Math.round(recM/1000 * bps * 1.2);
+    const estTotal = fmtTime(Math.round(warmM/1000*bps) + reps*(repTimeSec+recTimeSec) + Math.round(coolM/1000*bps));
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmM} m`, pace:null, paceRange:null, estTime: fmtTime(Math.round(warmM/1000*bps)) });
+    steps.push({
+      type:'repeat', reps,
+      substeps: [
+        { color:'blue', name:'Carrera',       dist:`${dist} m`, pace: useGPS ? fmtPace(bps,0.75) : null, paceRange: useGPS ? fmtPaceRange(bps,0.75) : null, estTime: fmtTime(repTimeSec) },
+        { color:'gray', name:'Recuperación',  dist:`${recM} m`, pace: null, paceRange: null, estTime: fmtTime(recTimeSec) },
+      ]
+    });
+    steps.push({ color:'green', name:'Enfriamiento', dist:`${coolM} m`, pace:null, paceRange:null, estTime: fmtTime(Math.round(coolM/1000*bps)) });
+    return { type:'garmin', name: s.tipo, totalDist:`${(totalM/1000).toFixed(1)} km`, estTime: estTotal, steps };
+  }
+
+  return null;
+}
+
+function formatStrava(s, p, bps, useGPS) {
+  // Strava usa descripción en texto con segmentos
+  if (s.badge === 'bs' || s.badge === 'bl') {
+    const km = parseFloat(s.detail);
+    const pace = useGPS ? fmtPace(bps, s.badge==='bl'?1.05:0.95) : 'ritmo suave';
+    return {
+      type: 'strava',
+      description: [
+        `📍 ${s.tipo} — ${km} km`,
+        `🏃 Segmento principal: ${pace}`,
+        `💡 ${s.note||''}`,
+      ].join('\n')
+    };
+  }
+  if (s.badge === 'bi') {
+    const m = s.detail.match(/(\d+)[×x](\d+)/);
+    const reps = m ? +m[1] : 4, dist = m ? +m[2] : 800;
+    const pace = useGPS ? fmtPace(bps, 0.75) : 'ritmo de esfuerzo alto';
+    return {
+      type: 'strava',
+      description: [
+        `📍 ${s.tipo}`,
+        `🔥 ${reps} × ${dist}m a ${pace}`,
+        `⏸ Recuperación: ${dist/2}m trote suave entre series`,
+        `💡 ${s.note||''}`,
+      ].join('\n')
+    };
+  }
+  return null;
+}
+
+function formatNike(s, p, bps, useGPS) {
+  if (!useGPS) return null;
+  const pace = fmtPace(bps, s.badge==='bi'?0.75:s.badge==='bl'?1.05:0.95);
+  return {
+    type: 'nike',
+    description: `${s.tipo} · ${s.detail.split('·')[0].trim()} · Objetivo: ${pace}`
+  };
+}
+
+function renderAppFormat(fmt, appType) {
+  if (!fmt) return '';
+  if (appType === 'garmin') return renderGarminCard(fmt);
+  if (appType === 'strava') return renderStravaCard(fmt);
+  if (appType === 'nike')   return renderNikeCard(fmt);
+  return '';
+}
+
+function renderGarminCard(fmt) {
+  const stepsHTML = fmt.steps.map(step => {
+    if (step.type === 'repeat') {
+      return `<div class="gmt-repeat">
+        <div class="gmt-repeat-label"><i class="fa-solid fa-rotate-right"></i> ${step.reps} veces</div>
+        ${step.substeps.map(sub => `
+          <div class="gmt-step gmt-sub">
+            <div class="gmt-color" style="background:${sub.color==='blue'?'#4fc3f7':sub.color==='gray'?'#607D8B':'#4fc3f7'}"></div>
+            <div class="gmt-step-info">
+              <div class="gmt-step-name">${sub.name}</div>
+              <div class="gmt-step-dist">${sub.dist}</div>
+              ${sub.pace ? `<div class="gmt-step-pace">Ritmo · ${sub.pace}<br><span style="color:#607D8B">(${sub.paceRange})</span></div>` : ''}
+              <div class="gmt-step-time">Est Tiempo: ${sub.estTime}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }
+    const colors = {red:'#ef5350', blue:'#4fc3f7', green:'#66bb6a', gray:'#607D8B'};
+    return `<div class="gmt-step">
+      <div class="gmt-color" style="background:${colors[step.color]||'#607D8B'}"></div>
+      <div class="gmt-step-info">
+        <div class="gmt-step-name">${step.name}</div>
+        <div class="gmt-step-dist">${step.dist}</div>
+        ${step.pace ? `<div class="gmt-step-pace">Ritmo · ${step.pace}<br><span style="color:#607D8B;font-size:11px">(${step.paceRange})</span></div>` : ''}
+        <div class="gmt-step-time">Est Tiempo: ${step.estTime}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="gmt-card">
+    <div class="gmt-header">
+      <div class="gmt-title"><i class="fa-solid fa-circle" style="color:#26C6DA;font-size:10px"></i> Formato Garmin Connect</div>
+      <div class="gmt-summary">
+        <div><span class="gmt-sum-val">${fmt.estTime}</span><div class="gmt-sum-lbl">Est Tiempo</div></div>
+        <div><span class="gmt-sum-val">${fmt.totalDist}</span><div class="gmt-sum-lbl">Distancia total</div></div>
+      </div>
+    </div>
+    <div class="gmt-steps-label">Pasos</div>
+    <div class="gmt-steps">${stepsHTML}</div>
+  </div>`;
+}
+
+function renderStravaCard(fmt) {
+  return `<div class="gmt-card" style="border-color:rgba(252,76,2,.3)">
+    <div class="gmt-header">
+      <div class="gmt-title" style="color:#FC4C02"><i class="fa-solid fa-circle" style="color:#FC4C02;font-size:10px"></i> Formato Strava</div>
+    </div>
+    <div style="font-size:13px;line-height:1.9;color:var(--text);white-space:pre-line;padding:4px 0">${fmt.description}</div>
+  </div>`;
+}
+
+function renderNikeCard(fmt) {
+  return `<div class="gmt-card" style="border-color:rgba(255,255,255,.15)">
+    <div class="gmt-header">
+      <div class="gmt-title"><i class="fa-solid fa-circle" style="color:#fff;font-size:10px"></i> Formato Nike Run Club</div>
+    </div>
+    <div style="font-size:13px;line-height:1.7;color:var(--text);padding:4px 0">${fmt.description}</div>
+  </div>`;
+}
 const ALTERNATIVES = {
   bl: [ // largo
     '🧘 Yoga restaurativo 45 min — enfócate en cadera, isquiotibiales y espalda baja.',
@@ -1305,6 +1537,9 @@ function renderPlan(plan, fd) {
       </div>
     </div>`;
 
+  const appType = detectApp(fd.apps);
+  const basePaceSec = estimatePace(fd);
+
   content.innerHTML = progHTML + plan.weeks.map((w, i) => {
     const tag = w.isRaceWeek ? ' 🏆' : w.isTaper ? ' ↓ Tapering' : w.isRecovery ? ' 🔄 Recuperación' : '';
 
@@ -1354,6 +1589,10 @@ function renderPlan(plan, fd) {
                 <div>${s.hidratacion||''}</div>
               </div>
             </div>
+            ${appType !== 'generic' ? (() => {
+              const fmt = formatSession(s, appType, null, basePaceSec, fd.relojGPS);
+              return fmt ? `<div style="margin-top:2px">${renderAppFormat(fmt, appType)}</div>` : '';
+            })() : ''}
           </div>
         </div>`;
     }).join('');

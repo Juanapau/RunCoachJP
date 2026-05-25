@@ -26,6 +26,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- SW registration — lo antes posible, antes del CSS/JS principal -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/RunCoachJP/sw.js', {scope: '/RunCoachJP/'})
+        .then(r => console.log('✅ SW registrado:', r.scope))
+        .catch(e => console.error('❌ SW error:', e));
+    }
+  </script>
   <style>
     :root {
       --pri:#26C6DA; --pri-b:#4DD0E1; --pri-d:#0097A7;
@@ -219,6 +228,56 @@
     /* week header */
     .week-obj{font-size:13px;color:var(--muted);padding:8px 0 12px;line-height:1.5;border-bottom:1px solid var(--border);margin-bottom:8px}
 
+    /* progress bar */
+    .prog-wrap{background:var(--bg2);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;border:1px solid var(--border)}
+    .prog-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px}
+    .prog-title{font-weight:700;color:var(--text)}
+    .prog-pct{font-weight:800;color:var(--pri);font-size:16px}
+    .prog-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+    .prog-fill{height:100%;background:linear-gradient(90deg,var(--pri-d),var(--pri-b));border-radius:4px;transition:width .5s ease}
+    .prog-stats{display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--muted)}
+    .prog-stat{display:flex;align-items:center;gap:4px}
+    .prog-stat i{font-size:11px}
+
+    /* session row with progress buttons */
+    .sr{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+    .sr:last-child{border-bottom:none}
+    .sd{font-weight:800;color:var(--pri);font-size:12px;padding-top:3px}
+    .stype{font-weight:600}
+    .sdet{color:var(--muted);font-size:13px;margin-top:2px}
+    .snote{color:#546E7A;font-size:12px;font-style:italic;margin-top:2px}
+
+    /* nutrition/hydration cards */
+    .snut{display:none;margin-top:8px;background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.6;border-left:3px solid var(--sec)}
+    .snut.open{display:block}
+    .snut-row{margin-bottom:6px}
+    .snut-row:last-child{margin-bottom:0}
+    .snut-label{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+    .snut-label.food{color:var(--sec-b)}
+    .snut-label.water{color:var(--pri)}
+
+    /* progress action buttons */
+    .sbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+    .sbtn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+    .sbtn-done{background:rgba(67,160,71,.15);color:var(--sec-b);border:1px solid rgba(67,160,71,.3)}
+    .sbtn-done:hover,.sbtn-done.active{background:var(--ok);color:#fff;border-color:var(--ok)}
+    .sbtn-skip{background:rgba(239,83,80,.12);color:var(--acc-b);border:1px solid rgba(239,83,80,.25)}
+    .sbtn-skip:hover,.sbtn-skip.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+    .sbtn-info{background:rgba(38,198,218,.1);color:var(--pri);border:1px solid rgba(38,198,218,.2)}
+    .sbtn-info:hover{background:rgba(38,198,218,.2)}
+
+    /* alternative exercise box */
+    .salt{display:none;margin-top:8px;background:rgba(255,167,38,.07);border:1px solid rgba(255,167,38,.2);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.6}
+    .salt.open{display:block}
+    .salt-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--warn);margin-bottom:4px}
+
+    /* session status indicators */
+    .sr.done .sd{color:var(--sec-b)}
+    .sr.done .stype{text-decoration:line-through;opacity:.6}
+    .sr.done::before{content:'✓';color:var(--ok);font-weight:800;font-size:13px;grid-column:1;grid-row:1}
+    .sr.skipped .stype{opacity:.5}
+    .done-check{color:var(--ok);font-size:14px;margin-left:4px}
+
     /* utils */
     .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
     .tr{color:var(--pri)} .tm{color:var(--muted)} .tsm{font-size:13px}
@@ -346,8 +405,12 @@
         </div>
         <div class="ferr" id="e-dias">Selecciona al menos 2 días</div></div>
       <div class="fg"><label class="fl">Duración máxima por sesión *</label>
-        <select class="fc" id="f16"><option value="">Seleccionar...</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">1 hora</option><option value="90">1 hora 30 minutos</option><option value="120">2 horas o más</option></select>
+        <select class="fc" id="f16" onchange="toggleOtraDuracion()"><option value="">Seleccionar...</option><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">1 hora</option><option value="90">1 hora 30 minutos</option><option value="120">2 horas o más</option><option value="otro">Otro...</option></select>
         <div class="ferr" id="e16">Selecciona la duración</div></div>
+      <div class="fg" id="otra-duracion-wrap" style="display:none">
+        <label class="fl">Especifica los minutos</label>
+        <input type="number" class="fc" id="f16b" placeholder="Ej: 75" min="15" max="240">
+      </div>
       <div class="fg"><label class="fl">Horario preferido *</label>
         <div class="rg" id="rg-hor">
           <label class="ro" onclick="selR(this,'rg-hor','Mañana')"><input type="radio">🌅 Mañana</label>
@@ -508,10 +571,11 @@
 let cStep = 1;
 const STEPS = 8;
 const SNAMES = ['Perfil físico','Nivel actual','Objetivo','Disponibilidad','Salud','Entorno','Recuperación','Tecnología'];
-let planObj = null;   // generated plan object
+let planObj = null;
 let formData = null;
 let modalCb = null;
 let lInterval = null;
+let currentPlanId = null;
 
 // ═══════════════════════════════════════════════════════════
 //  NAVIGATION
@@ -631,6 +695,11 @@ function onDistMeta() {
   document.getElementById('otra-wrap').style.display = v === 'otra' ? 'block' : 'none';
   document.getElementById('e13').classList.remove('on');
 }
+function toggleOtraDuracion() {
+  const v = document.getElementById('f16').value;
+  document.getElementById('otra-duracion-wrap').style.display = v === 'otro' ? 'block' : 'none';
+}
+
 function toggleTiempo() {
   document.getElementById('tobj-wrap').style.display = gR('rg-obj') === 'tiempo' ? 'block' : 'none';
 }
@@ -685,7 +754,7 @@ function collect() {
     fechaCarrera: document.getElementById('f15').value,
     semanasDisp: getSemanas(),
     dias: getDays(),
-    durMax: +document.getElementById('f16').value,
+    durMax: getDuracion(),
     horario: gR('rg-hor'),
     lesion: gR('rg-les') === 'si',
     lesionDesc: document.getElementById('f17').value,
@@ -718,6 +787,7 @@ function buildPlan() {
   // Small delay for UX
   setTimeout(() => {
     planObj = generatePlan(formData);
+    currentPlanId = 'preview';
     stopLoadMsg();
     renderPlan(planObj, formData);
     showScreen('plan');
@@ -807,47 +877,65 @@ const SESSION_TYPES = {
   suave: (km, pace, useGPS) => ({
     tipo: 'Rodaje suave', badge: 'bs',
     detail: `${km} km · ${pace(0.95)}`,
-    note: 'Ritmo conversacional, puedes hablar con alguien'
+    note: 'Ritmo conversacional, puedes hablar con alguien',
+    nutricion: 'Desayuno ligero 1-2h antes: avena o tostada con fruta. Evita alimentos grasos.',
+    hidratacion: `Toma 500ml de agua 30 min antes. Durante: ${km>8?'cada 20-25 min, 150ml':'puedes esperar al final'}. Después: 500ml en la primera hora.`
   }),
   largo: (km, pace, useGPS) => ({
     tipo: 'Tirada larga', badge: 'bl',
     detail: `${km} km · ${pace(1.05)}`,
-    note: 'El ritmo más suave de la semana. Llevar agua.'
+    note: 'El ritmo más suave de la semana. Llevar agua.',
+    nutricion: `Noche anterior: cena rica en carbohidratos (pasta, arroz, papa). Mañana de la tirada: desayuno 2h antes, incluye plátano y avena. ${km>15?'Lleva geles o dátiles para consumir cada 45 min.':''}`,
+    hidratacion: `Bebe 500ml al despertar. Durante: cada 15-20 min, 150-200ml. ${km>15?'Considera bebida isotónica si dura más de 1h 30min.':''} Después: repón con 750ml-1L en las siguientes 2h.`
   }),
   intervalos: (reps, dist, pace, useGPS) => ({
     tipo: 'Series / Intervalos', badge: 'bi',
     detail: `${reps}×${dist}m · ${pace(0.75)} + Recuperación suave`,
-    note: `Calentar 10 min · ${reps} repeticiones de ${dist}m · Enfriar 10 min`
+    note: `Calentar 10 min · ${reps} repeticiones de ${dist}m · Enfriar 10 min`,
+    nutricion: 'Consume carbohidratos 2-3h antes: arroz, pasta, pan. Evita proteínas pesadas. Un plátano 30 min antes funciona bien.',
+    hidratacion: 'Hidratación previa fundamental: 600ml en las 2h anteriores. Durante el calentamiento y recuperaciones: pequeños sorbos. Después: 500ml con electrolitos.'
   }),
   progresion: (km, pace, useGPS) => ({
     tipo: 'Rodaje de progresión', badge: 'bi',
     detail: `${km} km · inicio ${pace(1.05)} → final ${pace(0.85)}`,
-    note: 'Empezar suave y terminar al límite del umbral aeróbico'
+    note: 'Empezar suave y terminar al límite del umbral aeróbico',
+    nutricion: 'Comida principal 2-3h antes. El cuerpo necesita glucógeno disponible para la parte final intensa. Evita entrenar en ayunas.',
+    hidratacion: '500ml antes. Si dura más de 50 min lleva agua. Rehidrata bien después con agua o bebida deportiva.'
   }),
   fartlek: (km, pace, useGPS) => ({
     tipo: 'Fartlek', badge: 'bi',
     detail: `${km} km · alternando ritmos`,
-    note: `Ejemplo: 1 min rápido (${pace(0.75)}) / 2 min suave. Repetir.`
+    note: `Ejemplo: 1 min rápido (${pace(0.75)}) / 2 min suave. Repetir.`,
+    nutricion: 'Similar a intervalos: carbohidratos 2h antes. Un plátano o dátiles son una excelente opción rápida.',
+    hidratacion: 'Hidratación normal previa. Si el fartlek dura más de 45 min, lleva agua o deja una botella en el punto de inicio.'
   }),
   fuerza: () => ({
     tipo: 'Fuerza para corredores', badge: 'bf',
     detail: '45-60 min · peso corporal + gimnasio',
-    note: 'Sentadillas, zancadas, core, isquiotibiales. No cardio intenso.'
+    note: 'Sentadillas, zancadas, core, isquiotibiales. No cardio intenso.',
+    nutricion: 'Proteína en la comida post-entrenamiento es clave: huevo, pollo, legumbres. Dentro de los 30 min posteriores consume una merienda con proteína y carbohidrato.',
+    hidratacion: 'Hidratación normal durante el entrenamiento. 400-500ml al finalizar.'
   }),
   descansoActivo: () => ({
     tipo: 'Descanso activo', badge: 'bd',
     detail: '20-30 min · caminata, yoga o stretching',
-    note: 'Movilidad articular, estiramiento de cadera y gemelos'
+    note: 'Movilidad articular, estiramiento de cadera y gemelos',
+    nutricion: 'Día de recuperación: prioriza vegetales, proteína magra y grasas saludables. Evita el exceso de azúcar.',
+    hidratacion: 'Mantén hidratación constante durante el día: 2L de agua mínimo aunque no entrenes intenso.'
   }),
   descanso: () => ({
     tipo: 'Descanso total', badge: 'bd',
     detail: 'Reposo',
-    note: 'Hidratación, sueño, nutrición. El descanso también entrena.'
+    note: 'Hidratación, sueño, nutrición. El descanso también entrena.',
+    nutricion: 'Reduce ligeramente los carbohidratos al no haber gasto energético. Enfócate en proteína y vegetales para la recuperación muscular.',
+    hidratacion: 'Aunque no corras, bebe al menos 2L de agua al día. Ayuda a eliminar toxinas y reparar tejidos.'
   }),
   carrera: (dist) => ({
     tipo: '🏆 DÍA DE CARRERA', badge: 'bl',
     detail: `${dist} · ¡Disfruta el proceso!`,
-    note: 'Desayuna 2-3 hrs antes. Calienta 10 min. Confía en tu entrenamiento.'
+    note: 'Desayuna 2-3 hrs antes. Calienta 10 min. Confía en tu entrenamiento.',
+    nutricion: 'Noche anterior: pasta o arroz. Mañana: desayuno familiar 2-3h antes (lo que ya conoces y toleras bien). Nada nuevo el día de carrera. Lleva geles si la distancia supera los 16K.',
+    hidratacion: 'Al despertar: 500ml. Antes de la salida: 250ml. Durante: bebe en cada puesto de avituallamiento aunque no tengas sed. Después: repón agresivamente con agua e isotónica.'
   }),
 };
 
@@ -860,55 +948,49 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
   const isTaper = fromEnd <= 3;
   const isRecovery = weekNum % 4 === 0 && !isTaper;
 
-  // Distribute km across sessions
   const longKm = Math.round(weekVol * 0.35);
   const easyKm = Math.round(weekVol * 0.18);
-  const intKm = Math.round(weekVol * 0.12);
+  const intKm  = Math.round(weekVol * 0.12);
 
-  // Session pool
+  // Encuentra índice de sábado o domingo en los días disponibles
+  const weekend = ['Sábado','Domingo'];
+  const longIdx = (() => {
+    for (const wd of weekend) {
+      const i = days.indexOf(wd);
+      if (i !== -1) return i;
+    }
+    return n >= 3 ? n - 2 : n - 1; // fallback si no hay fin de semana
+  })();
+
   let pool = [];
+
   if (isRaceWeek) {
-    pool = [
-      {day: 0, s: SESSION_TYPES.suave(Math.round(weekVol * 0.4), pace, useGPS)},
-      {day: 1, s: SESSION_TYPES.descansoActivo()},
-      {day: 2, s: SESSION_TYPES.descanso()},
-      {day: 3, s: SESSION_TYPES.carrera(formData.distMeta)},
-    ];
-  } else if (isTaper) {
-    pool = [];
-    days.forEach((d, i) => {
-      if (i === 0) pool.push({day: i, s: SESSION_TYPES.suave(easyKm, pace, useGPS)});
-      else if (i === Math.floor(n / 2)) pool.push({day: i, s: SESSION_TYPES.largo(longKm, pace, useGPS)});
-      else if (i === n - 1 && !isRecovery) pool.push({day: i, s: SESSION_TYPES.suave(easyKm, pace, useGPS)});
-      else pool.push({day: i, s: SESSION_TYPES.descansoActivo()});
+    pool = days.map((d, i) => {
+      if (i === longIdx) return {day:i, s: SESSION_TYPES.carrera(formData.distMeta)};
+      if (i === longIdx - 1 || i === longIdx - 2) return {day:i, s: SESSION_TYPES.descanso()};
+      return {day:i, s: SESSION_TYPES.suave(Math.round(weekVol*0.2), pace, useGPS)};
     });
-  } else if (isRecovery) {
-    days.forEach((d, i) => {
-      if (i === 0) pool.push({day: i, s: SESSION_TYPES.suave(Math.round(easyKm * 0.8), pace, useGPS)});
-      else if (i === Math.floor(n / 2)) pool.push({day: i, s: SESSION_TYPES.descansoActivo()});
-      else if (i === n - 1) pool.push({day: i, s: SESSION_TYPES.suave(Math.round(easyKm * 0.7), pace, useGPS)});
-      else pool.push({day: i, s: SESSION_TYPES.descanso()});
+  } else if (isTaper || isRecovery) {
+    pool = days.map((d, i) => {
+      if (i === longIdx) return {day:i, s: SESSION_TYPES.largo(longKm, pace, useGPS)};
+      if (i === 0) return {day:i, s: SESSION_TYPES.suave(Math.round(easyKm*(isRecovery?0.7:0.9)), pace, useGPS)};
+      return {day:i, s: SESSION_TYPES.descansoActivo()};
     });
   } else {
-    // Normal build week
-    const hasSeries = !hasLesion && (exp === 'intermedio' || exp === 'avanzado') && n >= 3;
-    const hasFartlek = !hasLesion && exp !== 'principiante' && n >= 3;
-    let sessions = [];
-    // Long run — ideally second to last day
-    const longIdx = n >= 3 ? n - 2 : n - 1;
+    const hasSeries = !hasLesion && (exp==='intermedio'||exp==='avanzado') && n>=3;
+    const hasFartlek = !hasLesion && exp!=='principiante' && n>=3;
+    let sessions = new Array(n).fill(null);
     sessions[longIdx] = SESSION_TYPES.largo(longKm, pace, useGPS);
-    // Fill other days
     let filled = 0;
     for (let i = 0; i < n; i++) {
       if (sessions[i]) continue;
-      if (hasGym && filled === 0 && !hasLesion) { sessions[i] = SESSION_TYPES.fuerza(); filled++; continue; }
-      if (hasSeries && filled < 1) { sessions[i] = SESSION_TYPES.intervalos(6, exp === 'avanzado' ? 1000 : 400, pace, useGPS); filled++; continue; }
-      if (hasFartlek && filled < 1) { sessions[i] = SESSION_TYPES.fartlek(intKm, pace, useGPS); filled++; continue; }
-      if (i === n - 1) { sessions[i] = SESSION_TYPES.descansoActivo(); continue; }
+      if (hasGym && filled===0 && !hasLesion)       { sessions[i]=SESSION_TYPES.fuerza();                                              filled++; continue; }
+      if (hasSeries && filled<1)                    { sessions[i]=SESSION_TYPES.intervalos(6,exp==='avanzado'?1000:400,pace,useGPS);  filled++; continue; }
+      if (hasFartlek && filled<1)                   { sessions[i]=SESSION_TYPES.fartlek(intKm,pace,useGPS);                           filled++; continue; }
+      if (i===n-1)                                  { sessions[i]=SESSION_TYPES.descansoActivo();                                               continue; }
       sessions[i] = SESSION_TYPES.suave(easyKm, pace, useGPS);
     }
-    days.forEach((d, i) => pool.push({day: i, s: sessions[i] || SESSION_TYPES.descansoActivo()}));
-    return pool;
+    pool = days.map((d,i) => ({day:i, s: sessions[i]||SESSION_TYPES.descansoActivo()}));
   }
   return pool;
 }
@@ -980,9 +1062,109 @@ function buildTips(d) {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  ALTERNATIVES FOR SKIPPED SESSIONS
+// ═══════════════════════════════════════════════════════════
+const ALTERNATIVES = {
+  bl: [ // largo
+    '🧘 Yoga restaurativo 45 min — enfócate en cadera, isquiotibiales y espalda baja.',
+    '🚶 Caminata larga al aire libre (5-7 km a ritmo tranquilo) — mantiene el hábito sin impacto.',
+    '🚴 Bicicleta suave 40-50 min — trabajo aeróbico sin carga en las articulaciones.',
+    '🏊 Natación 30 min estilo libre suave — excelente recuperación activa.',
+  ],
+  bi: [ // intenso/intervalos/fartlek
+    '🧘 Yoga dinámico 30 min (flujo de vinyasa) — mantiene movilidad y algo de esfuerzo cardiovascular.',
+    '🚶 Caminata con cuestas o escaleras 25 min — estimula el sistema cardiovascular suavemente.',
+    '🌿 Stretching profundo + respiración 20 min — reduce tensión acumulada.',
+    '🚴 Bicicleta moderada 30 min — alternativa de bajo impacto al trabajo de calidad.',
+  ],
+  bs: [ // suave
+    '🧘 Yoga suave o yin yoga 30 min — perfecta alternativa de recuperación.',
+    '🚶 Caminata 20-30 min a ritmo conversacional — mantiene el movimiento sin impacto.',
+    '🌊 Ejercicios de movilidad y foam roller 20 min — trabaja puntos de tensión.',
+    '💃 Baile libre 20 min — aeróbico, divertido y sin presión.',
+  ],
+  bf: [ // fuerza
+    '🧘 Yoga de fuerza (warrior flows) 30 min — trabaja los mismos grupos musculares.',
+    '🌿 Pilates 30 min — core y estabilización funcional.',
+    '🚶 Caminata activa con ejercicios de peso corporal cada 5 min — sentadillas, planchas, zancadas.',
+    '🏠 Rutina express de casa 20 min: 3 series de sentadillas, planchas y puentes de glúteo.',
+  ],
+  bd: [ // descanso
+    '✅ Es un día de descanso — está bien no hacer nada. El cuerpo se adapta mientras reposa.',
+    '🧘 Si quieres moverte, 15 min de stretching suave o meditación con respiración profunda.',
+    '🌿 Caminata muy tranquila 15 min para activar la circulación sin fatiga.',
+  ],
+};
+
+function getAlternative(badge) {
+  const opts = ALTERNATIVES[badge] || ALTERNATIVES.bs;
+  return opts[Math.floor(Math.random() * opts.length)];
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PROGRESS TRACKING
+// ═══════════════════════════════════════════════════════════
+function getProgress(planId) {
+  try { return JSON.parse(localStorage.getItem('runcoach_progress_'+planId)||'{}'); } catch { return {}; }
+}
+function setProgress(planId, data) {
+  localStorage.setItem('runcoach_progress_'+planId, JSON.stringify(data));
+}
+function getSessKey(weekNum, dayName) { return `w${weekNum}_${dayName}`; }
+
+function markSession(planId, weekNum, dayName, status) {
+  const prog = getProgress(planId);
+  const key = getSessKey(weekNum, dayName);
+  prog[key] = status;
+  setProgress(planId, prog);
+  updateProgressBar(planId);
+  // Update session row appearance
+  const row = document.getElementById('sr_'+key);
+  if (row) {
+    row.classList.remove('done','skipped');
+    if (status === 'done') row.classList.add('done');
+    if (status === 'skipped') row.classList.add('skipped');
+    // Update buttons
+    row.querySelectorAll('.sbtn-done').forEach(b => b.classList.toggle('active', status==='done'));
+    row.querySelectorAll('.sbtn-skip').forEach(b => b.classList.toggle('active', status==='skipped'));
+    // Show alternative if skipped
+    const alt = row.querySelector('.salt');
+    if (alt) alt.classList.toggle('open', status==='skipped');
+  }
+}
+
+function toggleNutrition(key) {
+  const el = document.getElementById('nut_'+key);
+  if (el) el.classList.toggle('open');
+}
+
+function updateProgressBar(planId) {
+  const prog = getProgress(planId);
+  const total = planObj ? planObj.weeks.reduce((s,w) => s+w.sessions.length, 0) : 0;
+  const done = Object.values(prog).filter(v=>v==='done').length;
+  const skipped = Object.values(prog).filter(v=>v==='skipped').length;
+  const completed = done + skipped;
+  const pct = total > 0 ? Math.round((completed/total)*100) : 0;
+  const donePct = total > 0 ? Math.round((done/total)*100) : 0;
+
+  const fill = document.getElementById('prog-fill');
+  const pctEl = document.getElementById('prog-pct');
+  const doneEl = document.getElementById('prog-done');
+  const skipEl = document.getElementById('prog-skip');
+  const remEl = document.getElementById('prog-rem');
+
+  if (fill) fill.style.width = donePct + '%';
+  if (pctEl) pctEl.textContent = donePct + '%';
+  if (doneEl) doneEl.textContent = done;
+  if (skipEl) skipEl.textContent = skipped;
+  if (remEl) remEl.textContent = Math.max(0, total - completed);
+}
+
+// ═══════════════════════════════════════════════════════════
 //  RENDER PLAN
 // ═══════════════════════════════════════════════════════════
 function renderPlan(plan, fd) {
+  const planId = currentPlanId || 'preview';
   document.getElementById('pname').textContent = fd.nombrePlan;
   document.getElementById('pmeta').innerHTML = `
     <div class="pmi"><i class="fa-solid fa-person-running"></i>${fd.nombre}</div>
@@ -991,22 +1173,88 @@ function renderPlan(plan, fd) {
     <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${fd.dias.length} días/sem</div>
   `;
 
+  const prog = getProgress(planId);
+  const totalSessions = plan.weeks.reduce((s,w) => s+w.sessions.length, 0);
+  const doneSessions = Object.values(prog).filter(v=>v==='done').length;
+  const skipSessions = Object.values(prog).filter(v=>v==='skipped').length;
+  const donePct = totalSessions > 0 ? Math.round((doneSessions/totalSessions)*100) : 0;
+
   const content = document.getElementById('pcontent');
-  content.innerHTML = plan.weeks.map((w, i) => {
+
+  // Progress bar
+  const progHTML = `
+    <div class="prog-wrap">
+      <div class="prog-label">
+        <span class="prog-title"><i class="fa-solid fa-chart-line" style="color:var(--pri);margin-right:6px"></i>Tu progreso</span>
+        <span class="prog-pct" id="prog-pct">${donePct}%</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:${donePct}%"></div></div>
+      <div class="prog-stats">
+        <div class="prog-stat"><i class="fa-solid fa-circle-check" style="color:var(--ok)"></i><span id="prog-done">${doneSessions}</span> realizados</div>
+        <div class="prog-stat"><i class="fa-solid fa-circle-xmark" style="color:var(--acc-b)"></i><span id="prog-skip">${skipSessions}</span> omitidos</div>
+        <div class="prog-stat"><i class="fa-solid fa-clock" style="color:var(--muted)"></i><span id="prog-rem">${Math.max(0,totalSessions-doneSessions-skipSessions)}</span> pendientes</div>
+      </div>
+    </div>`;
+
+  content.innerHTML = progHTML + plan.weeks.map((w, i) => {
     const tag = w.isRaceWeek ? ' 🏆' : w.isTaper ? ' ↓ Tapering' : w.isRecovery ? ' 🔄 Recuperación' : '';
-    const sessHTML = w.sessions.map(s => `
-      <div class="sr">
-        <div class="sd">${s.day.substring(0,3)}</div>
-        <div>
-          <div class="stype">${s.tipo}</div>
-          <div class="sdet">${s.detail}</div>
-          ${s.note ? `<div class="sdet" style="color:#546E7A;font-style:italic">${s.note}</div>` : ''}
-        </div>
-        <div><span class="badge ${s.badge}">${badgeLabel(s.badge)}</span></div>
-      </div>`).join('');
+
+    // Week completion indicator
+    const weekDone = w.sessions.filter(s => prog[getSessKey(w.num, s.day)] === 'done').length;
+    const weekTotal = w.sessions.length;
+    const weekPct = Math.round((weekDone/weekTotal)*100);
+
+    const sessHTML = w.sessions.map(s => {
+      const key = getSessKey(w.num, s.day);
+      const status = prog[key] || '';
+      const alt = getAlternative(s.badge);
+      return `
+        <div class="sr ${status}" id="sr_${key}">
+          <div class="sd">${s.day.substring(0,3)}</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="stype">${s.tipo}</span>
+              <span class="badge ${s.badge}">${badgeLabel(s.badge)}</span>
+              ${status==='done'?'<span class="done-check">✓</span>':''}
+            </div>
+            <div class="sdet">${s.detail}</div>
+            ${s.note ? `<div class="snote">${s.note}</div>` : ''}
+            <div class="sbtns">
+              <button class="sbtn sbtn-done ${status==='done'?'active':''}" onclick="markSession('${planId}',${w.num},'${s.day}','done')">
+                <i class="fa-solid fa-circle-check"></i> Realizado
+              </button>
+              <button class="sbtn sbtn-skip ${status==='skipped'?'active':''}" onclick="markSession('${planId}',${w.num},'${s.day}','skipped')">
+                <i class="fa-solid fa-circle-xmark"></i> No realizado
+              </button>
+              <button class="sbtn sbtn-info" onclick="toggleNutrition('${key}')">
+                <i class="fa-solid fa-bowl-rice"></i> Nutrición
+              </button>
+            </div>
+            <div class="salt ${status==='skipped'?'open':''}" id="alt_${key}">
+              <div class="salt-title"><i class="fa-solid fa-lightbulb"></i> Alternativa sugerida</div>
+              ${alt}
+            </div>
+            <div class="snut" id="nut_${key}">
+              <div class="snut-row">
+                <div class="snut-label food"><i class="fa-solid fa-bowl-rice"></i> Alimentación</div>
+                <div>${s.nutricion||''}</div>
+              </div>
+              <div class="snut-row">
+                <div class="snut-label water"><i class="fa-solid fa-droplet"></i> Hidratación</div>
+                <div>${s.hidratacion||''}</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
     return `<div class="ai">
       <div class="ah ${i===0?'open':''}" onclick="togAcc(this)">
-        <span><span class="tr">Semana ${w.num}</span>${tag} · ${w.vol} km</span>
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+          <span><span class="tr">Semana ${w.num}</span>${tag}</span>
+          <span style="font-size:12px;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:600">${w.vol} km</span>
+          ${weekDone>0?`<span style="font-size:11px;color:var(--ok);font-family:'Nunito',sans-serif">${weekDone}/${weekTotal} ✓</span>`:''}
+        </div>
         <i class="fa-solid fa-chevron-down chv"></i>
       </div>
       <div class="abody ${i===0?'open':''}">
@@ -1022,7 +1270,7 @@ function renderPlan(plan, fd) {
 
   document.getElementById('bsave').disabled = false;
   document.getElementById('bsave').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar plan';
-  document.getElementById('bsave').style.background = 'var(--red)';
+  document.getElementById('bsave').style.background = '';
 }
 
 function badgeLabel(b) {
@@ -1040,8 +1288,9 @@ function setPlanes(a) { localStorage.setItem('runcoach_planes', JSON.stringify(a
 function savePlan() {
   if (!planObj || !formData) return;
   const planes = getPlanes();
+  const id = Date.now() + '-' + Math.random().toString(36).slice(2);
   const plan = {
-    id: Date.now() + '-' + Math.random().toString(36).slice(2),
+    id,
     nombre: formData.nombrePlan,
     distMeta: formData.distMeta,
     fechaCreacion: new Date().toISOString().slice(0,10),
@@ -1052,6 +1301,7 @@ function savePlan() {
   };
   planes.unshift(plan);
   setPlanes(planes);
+  currentPlanId = id;
   const btn = document.getElementById('bsave');
   btn.disabled = true;
   btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Plan guardado';
@@ -1069,8 +1319,8 @@ function viewPlan(id) {
   const p = getPlanes().find(p => p.id === id);
   if (!p) return;
   planObj = p.planObj; formData = p.formData;
-  // Re-link formData inside planObj
   planObj.d = formData;
+  currentPlanId = id;
   renderPlan(planObj, formData);
   const btn = document.getElementById('bsave');
   btn.disabled = true;
@@ -1144,17 +1394,6 @@ function stopLoadMsg() { clearInterval(lInterval); }
 //  PWA — SERVICE WORKER + INSTALL BANNER
 // ═══════════════════════════════════════════════════════════
 
-// Registro del Service Worker
-function setupServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/RunCoachJP/sw.js', { scope: '/RunCoachJP/' })
-        .then(reg => console.log('✅ RunCoach SW registrado:', reg.scope))
-        .catch(err => console.error('❌ RunCoach SW error:', err));
-    });
-  }
-}
-
 // Banner de instalación (Android/Chrome)
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
@@ -1198,9 +1437,6 @@ window.addEventListener('appinstalled', () => {
   showToast('¡RunCoach instalado correctamente!');
   deferredPrompt = null;
 });
-
-// Init
-setupServiceWorker();
 </script>
 </body>
 </html>

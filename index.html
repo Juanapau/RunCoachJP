@@ -27,12 +27,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <!-- SW registration — lo antes posible, antes del CSS/JS principal -->
+  <!-- SW registration -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/RunCoachJP/sw.js', {scope: '/RunCoachJP/'})
-        .then(r => console.log('✅ SW registrado:', r.scope))
+        .then(reg => {
+          console.log('✅ SW registrado:', reg.scope);
+          // Detectar actualización disponible y recargar
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'activated') {
+                window.location.reload();
+              }
+            });
+          });
+          // Forzar verificación de actualización cada vez que carga
+          reg.update();
+        })
         .catch(e => console.error('❌ SW error:', e));
+
+      // Si el SW controlador cambia, recargar la página
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
     }
   </script>
   <style>

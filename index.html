@@ -1146,10 +1146,13 @@ function stopLoadMsg() { clearInterval(lInterval); }
 
 // Registro del Service Worker
 function setupServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('/RunCoachJP/sw.js', { scope: '/RunCoachJP/' })
-    .then(() => console.log('RunCoach SW registrado ✓'))
-    .catch(err => console.warn('SW:', err));
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/RunCoachJP/sw.js', { scope: '/RunCoachJP/' })
+        .then(reg => console.log('✅ RunCoach SW registrado:', reg.scope))
+        .catch(err => console.error('❌ RunCoach SW error:', err));
+    });
+  }
 }
 
 // Banner de instalación (Android/Chrome)
@@ -1197,9 +1200,7 @@ window.addEventListener('appinstalled', () => {
 });
 
 // Init
-window.addEventListener('load', () => {
-  setupServiceWorker();
-});
+setupServiceWorker();
 </script>
 </body>
 </html>

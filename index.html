@@ -700,6 +700,12 @@ function toggleOtraDuracion() {
   document.getElementById('otra-duracion-wrap').style.display = v === 'otro' ? 'block' : 'none';
 }
 
+function getDuracion() {
+  const v = document.getElementById('f16').value;
+  if (v === 'otro') return +document.getElementById('f16b').value || 60;
+  return +v || 60;
+}
+
 function toggleTiempo() {
   document.getElementById('tobj-wrap').style.display = gR('rg-obj') === 'tiempo' ? 'block' : 'none';
 }

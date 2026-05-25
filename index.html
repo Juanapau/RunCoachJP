@@ -2,12 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <meta name="theme-color" content="#C0392B">
-  <meta name="description" content="RunCoach IA — Planes de entrenamiento personalizados para corredores">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#151c27">
+  <meta name="description" content="RunCoach — Planes de entrenamiento personalizados para corredores. Sin internet, sin cuenta, gratis.">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>RunCoach IA</title>
+  <meta name="apple-mobile-web-app-title" content="RunCoach">
+  <meta name="application-name" content="RunCoach">
+  <meta name="msapplication-TileColor" content="#151c27">
+
+  <title>RunCoach</title>
+
+  <!-- Manifest PWA inline via blob (funciona en GitHub Pages) -->
+  <link rel="manifest" id="pwa-manifest">
+
+  <!-- Apple touch icons (SVG → PNG generado por canvas) -->
+  <link rel="apple-touch-icon" id="apple-icon">
+  <link rel="icon" type="image/png" id="favicon">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1125,7 +1138,178 @@ function startLoadMsg() {
   lInterval = setInterval(() => { i = (i+1) % lMsgs.length; document.getElementById('ltxt').textContent = lMsgs[i]; }, 500);
 }
 function stopLoadMsg() { clearInterval(lInterval); }
+
+// ═══════════════════════════════════════════════════════════
+//  PWA — ICON + MANIFEST + SERVICE WORKER
+// ═══════════════════════════════════════════════════════════
+
+// ── 1. Genera icono PNG mediante Canvas ──────────────────
+function generateIcon(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  // Fondo
+  ctx.fillStyle = '#151c27';
+  ctx.beginPath();
+  const r = size * 0.18;
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+  // Línea superior cian
+  const grad = ctx.createLinearGradient(0, 0, size, 0);
+  grad.addColorStop(0, '#0097A7');
+  grad.addColorStop(1, '#4DD0E1');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size * 0.035);
+  // Ícono corredor (Font Awesome no disponible en canvas — dibujamos figura simple)
+  const cx = size / 2, cy = size / 2;
+  const s = size * 0.38;
+  ctx.strokeStyle = '#26C6DA';
+  ctx.lineWidth = size * 0.07;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  // Cabeza
+  ctx.beginPath();
+  ctx.arc(cx + s * 0.18, cy - s * 0.55, s * 0.15, 0, Math.PI * 2);
+  ctx.fillStyle = '#26C6DA';
+  ctx.fill();
+  // Cuerpo
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.18, cy - s * 0.38);
+  ctx.lineTo(cx, cy + s * 0.05);
+  ctx.stroke();
+  // Brazo delantero
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.1, cy - s * 0.2);
+  ctx.lineTo(cx + s * 0.45, cy - s * 0.05);
+  ctx.stroke();
+  // Brazo trasero
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.1, cy - s * 0.2);
+  ctx.lineTo(cx - s * 0.2, cy - s * 0.35);
+  ctx.stroke();
+  // Pierna delantera
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s * 0.05);
+  ctx.lineTo(cx + s * 0.32, cy + s * 0.45);
+  ctx.lineTo(cx + s * 0.18, cy + s * 0.7);
+  ctx.stroke();
+  // Pierna trasera
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s * 0.05);
+  ctx.lineTo(cx - s * 0.22, cy + s * 0.42);
+  ctx.lineTo(cx - s * 0.08, cy + s * 0.7);
+  ctx.stroke();
+  return c.toDataURL('image/png');
+}
+
+// ── 2. Inyecta iconos en el DOM ──────────────────────────
+function setupIcons() {
+  const icon192 = generateIcon(192);
+  const icon512 = generateIcon(512);
+  const icon180 = generateIcon(180);
+  document.getElementById('apple-icon').href = icon180;
+  document.getElementById('favicon').href = icon192;
+  return { icon192, icon512 };
+}
+
+// ── 3. Crea y enlaza el Manifest ────────────────────────
+function setupManifest(icon192, icon512) {
+  const manifest = {
+    name: 'RunCoach',
+    short_name: 'RunCoach',
+    description: 'Planes de entrenamiento personalizados para corredores. Sin internet, sin cuenta, gratis.',
+    start_url: './',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#151c27',
+    theme_color: '#151c27',
+    lang: 'es',
+    categories: ['health', 'fitness', 'sports'],
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ],
+    shortcuts: [
+      {
+        name: 'Nuevo Plan',
+        short_name: 'Nuevo',
+        description: 'Crear un nuevo plan de entrenamiento',
+        url: './',
+        icons: [{ src: icon192, sizes: '192x192' }]
+      }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  const url = URL.createObjectURL(blob);
+  document.getElementById('pwa-manifest').href = url;
+}
+
+// ── 4. Registra el Service Worker (archivo sw.js externo) ─
+function setupServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('./sw.js', { scope: './' })
+    .then(() => console.log('RunCoach SW registrado'))
+    .catch(err => console.warn('SW no disponible (abre desde GitHub Pages):', err));
+}
+
+// ── 5. Banner de instalación ─────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  if (document.getElementById('install-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex:1">
+      <i class="fa-solid fa-mobile-screen" style="font-size:22px;color:var(--pri)"></i>
+      <div>
+        <div style="font-weight:700;font-size:14px">Instalar RunCoach</div>
+        <div style="font-size:12px;color:var(--muted)">Agregar a tu pantalla de inicio</div>
+      </div>
+    </div>
+    <button onclick="installPWA()" style="background:linear-gradient(135deg,var(--pri-d),var(--pri));color:#111;border:none;padding:8px 18px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Instalar</button>
+    <button onclick="dismissBanner()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:4px 8px;line-height:1">×</button>
+  `;
+  banner.style.cssText = 'position:fixed;bottom:68px;left:8px;right:8px;z-index:400;background:var(--card);border:1px solid rgba(38,198,218,.3);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,.6);animation:fiu .3s ease';
+  document.body.appendChild(banner);
+}
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => { deferredPrompt = null; dismissBanner(); });
+}
+
+function dismissBanner() {
+  const b = document.getElementById('install-banner');
+  if (b) b.remove();
+}
+
+window.addEventListener('appinstalled', () => {
+  dismissBanner();
+  showToast('¡RunCoach instalado correctamente!');
+});
+
+// ── 6. Init PWA ──────────────────────────────────────────
+window.addEventListener('load', () => {
+  const { icon192, icon512 } = setupIcons();
+  setupManifest(icon192, icon512);
+  setupServiceWorker();
+});
 </script>
 </body>
 </html>
-HTMLEOF

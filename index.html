@@ -144,12 +144,7 @@
     .abody{display:none;padding:0 18px 16px;background:var(--card)}
     .abody.open{display:block}
 
-    /* session rows */
-    .sr{display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
-    .sr:last-child{border-bottom:none}
-    .sd{font-weight:800;color:var(--pri);font-size:12px;padding-top:2px}
-    .stype{font-weight:600}
-    .sdet{color:var(--muted);font-size:13px;margin-top:2px}
+    /* session rows - ver sección "session row with progress buttons" */
     .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;text-transform:uppercase;letter-spacing:.05em}
     .bs{background:rgba(67,160,71,.15);color:#66BB6A}
     .bl{background:rgba(239,83,80,.15);color:#E57373}
@@ -239,13 +234,14 @@
     .prog-stat{display:flex;align-items:center;gap:4px}
     .prog-stat i{font-size:11px}
 
-    /* session row with progress buttons */
-    .sr{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+    /* session rows - ÚNICA definición */
+    .sr{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
     .sr:last-child{border-bottom:none}
-    .sd{font-weight:800;color:var(--pri);font-size:12px;padding-top:3px}
+    .sd{font-weight:800;color:var(--pri);font-size:12px;padding-top:3px;min-width:28px;flex-shrink:0}
     .stype{font-weight:600}
     .sdet{color:var(--muted);font-size:13px;margin-top:2px}
     .snote{color:#546E7A;font-size:12px;font-style:italic;margin-top:2px}
+    .scontent{flex:1;min-width:0}
 
     /* nutrition/hydration cards */
     .snut{display:none;margin-top:8px;background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.6;border-left:3px solid var(--sec)}
@@ -271,12 +267,13 @@
     .salt.open{display:block}
     .salt-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--warn);margin-bottom:4px}
 
-    /* session status indicators */
-    .sr.done .sd{color:var(--sec-b)}
-    .sr.done .stype{text-decoration:line-through;opacity:.6}
-    .sr.done::before{content:'✓';color:var(--ok);font-weight:800;font-size:13px;grid-column:1;grid-row:1}
-    .sr.skipped .stype{opacity:.5}
-    .done-check{color:var(--ok);font-size:14px;margin-left:4px}
+    /* session status */
+    .sr.done .sd{color:var(--ok)}
+    .sr.done .stype{opacity:.6}
+    .sr.skipped .sd{color:var(--acc-b)}
+    .sr.skipped .stype{opacity:.45}
+    .done-check{color:var(--ok);font-size:13px;margin-left:4px}
+    .skip-check{color:var(--acc-b);font-size:13px;margin-left:4px}
 
     /* utils */
     .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
@@ -1121,27 +1118,57 @@ function getSessKey(weekNum, dayName) { return `w${weekNum}_${dayName}`; }
 function markSession(planId, weekNum, dayName, status) {
   const prog = getProgress(planId);
   const key = getSessKey(weekNum, dayName);
-  prog[key] = status;
+  // Toggle off if clicking same status
+  const prev = prog[key];
+  prog[key] = prev === status ? '' : status;
   setProgress(planId, prog);
   updateProgressBar(planId);
-  // Update session row appearance
-  const row = document.getElementById('sr_'+key);
-  if (row) {
-    row.classList.remove('done','skipped');
-    if (status === 'done') row.classList.add('done');
-    if (status === 'skipped') row.classList.add('skipped');
-    // Update buttons
-    row.querySelectorAll('.sbtn-done').forEach(b => b.classList.toggle('active', status==='done'));
-    row.querySelectorAll('.sbtn-skip').forEach(b => b.classList.toggle('active', status==='skipped'));
-    // Show alternative if skipped
-    const alt = row.querySelector('.salt');
-    if (alt) alt.classList.toggle('open', status==='skipped');
+  const newStatus = prog[key];
+  const row = document.getElementById('sr_' + key);
+  if (!row) return;
+  row.classList.remove('done','skipped');
+  if (newStatus === 'done') row.classList.add('done');
+  if (newStatus === 'skipped') row.classList.add('skipped');
+  // Update buttons
+  row.querySelectorAll('.sbtn-done').forEach(b => b.classList.toggle('active', newStatus==='done'));
+  row.querySelectorAll('.sbtn-skip').forEach(b => b.classList.toggle('active', newStatus==='skipped'));
+  // Update status icon in title
+  const scontent = row.querySelector('.scontent');
+  const titleRow = scontent ? scontent.querySelector('div:first-child') : null;
+  if (titleRow) {
+    titleRow.querySelectorAll('.done-check,.skip-check').forEach(e => e.remove());
+    if (newStatus === 'done') {
+      titleRow.insertAdjacentHTML('beforeend','<span class="done-check"><i class="fa-solid fa-circle-check"></i></span>');
+    } else if (newStatus === 'skipped') {
+      titleRow.insertAdjacentHTML('beforeend','<span class="skip-check"><i class="fa-solid fa-circle-xmark"></i></span>');
+    }
   }
+  // Show/hide alternative
+  const alt = row.querySelector('.salt');
+  if (alt) alt.classList.toggle('open', newStatus==='skipped');
+  // Update week counter in accordion header
+  updateWeekCounter(weekNum);
 }
 
 function toggleNutrition(key) {
   const el = document.getElementById('nut_'+key);
   if (el) el.classList.toggle('open');
+}
+
+function updateWeekCounter(weekNum) {
+  if (!planObj) return;
+  const planId = currentPlanId || 'preview';
+  const prog = getProgress(planId);
+  const week = planObj.weeks.find(w => w.num === weekNum);
+  if (!week) return;
+  const done = week.sessions.filter(s => prog[getSessKey(weekNum, s.day)] === 'done').length;
+  const total = week.sessions.length;
+  // Find the counter span inside the accordion header for this week
+  const counter = document.getElementById('wk-counter-'+weekNum);
+  if (counter) {
+    counter.textContent = done > 0 ? `${done}/${total} ✓` : '';
+    counter.style.display = done > 0 ? 'inline' : 'none';
+  }
 }
 
 function updateProgressBar(planId) {
@@ -1217,11 +1244,12 @@ function renderPlan(plan, fd) {
       return `
         <div class="sr ${status}" id="sr_${key}">
           <div class="sd">${s.day.substring(0,3)}</div>
-          <div>
+          <div class="scontent">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span class="stype">${s.tipo}</span>
               <span class="badge ${s.badge}">${badgeLabel(s.badge)}</span>
-              ${status==='done'?'<span class="done-check">✓</span>':''}
+              ${status==='done'?'<span class="done-check"><i class="fa-solid fa-circle-check"></i></span>':''}
+              ${status==='skipped'?'<span class="skip-check"><i class="fa-solid fa-circle-xmark"></i></span>':''}
             </div>
             <div class="sdet">${s.detail}</div>
             ${s.note ? `<div class="snote">${s.note}</div>` : ''}
@@ -1259,7 +1287,7 @@ function renderPlan(plan, fd) {
         <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
           <span><span class="tr">Semana ${w.num}</span>${tag}</span>
           <span style="font-size:12px;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:600">${w.vol} km</span>
-          ${weekDone>0?`<span style="font-size:11px;color:var(--ok);font-family:'Nunito',sans-serif">${weekDone}/${weekTotal} ✓</span>`:''}
+          ${weekDone>0?`<span id="wk-counter-${w.num}" style="font-size:11px;color:var(--ok);font-family:'Nunito',sans-serif">${weekDone}/${weekTotal} ✓</span>`:`<span id="wk-counter-${w.num}" style="display:none;font-size:11px;color:var(--ok);font-family:'Nunito',sans-serif"></span>`}
         </div>
         <i class="fa-solid fa-chevron-down chv"></i>
       </div>

@@ -1174,7 +1174,9 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
   const maxLong = getMaxLongRun(raceKm, exp, distMaxCompletada);
   const buildWeeks = totalW - 4;
   const buildRatio = Math.min((weekNum - 1) / Math.max(buildWeeks, 1), 1.0);
-  const startLong = Math.max(Math.round(maxLong * 0.35), 3);
+  // Minimum long run start: >10km if race is >15km
+  const minLongStart = raceKm > 15 ? 11 : Math.max(3, Math.round(raceKm * 0.35));
+  const startLong = Math.min(maxLong, Math.max(minLongStart, Math.round(maxLong * 0.35)));
 
   // Weeks at peak long run: last 2-3 build weeks repeat maxLong
   const peakLongWeeks = Math.min(3, Math.floor(buildWeeks * 0.25));
@@ -1323,11 +1325,18 @@ function generatePlan(d) {
       d.gimnasio, d.lesion, d.experiencia, raceKm, d.distMax
     );
 
+    // Calculate ACTUAL km from sessions so header matches reality
+    const actualVol = sessions.reduce((sum, item) => {
+      const s = item.s;
+      const km = parseFloat((s.detail || '').match(/^(\d+(?:\.\d+)?)\s*km/)?.[1] || 0);
+      return sum + km;
+    }, 0);
+
     const obj = weekObjective(w, totalW, d.experiencia, d.distMeta, d.lesion, isTaper, isRecovery, isRaceWeek);
 
     weeks.push({
       num: w,
-      vol,
+      vol: Math.round(actualVol) || vol,
       isRecovery,
       isTaper,
       isRaceWeek,

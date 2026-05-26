@@ -843,14 +843,16 @@ function updRes() {
   const dm = document.getElementById('f13').value;
   const obj = gR('rg-obj');
   const dias = getDays().length;
+  const t14 = document.getElementById('f14').value || '—';
+  const t14b = document.getElementById('f14b').value || '—';
   const objLabel = obj==='terminar' ? 'Solo terminar'
-    : obj==='tiempo' ? `Tiempo: ${document.getElementById('f14').value||'—'}`
-    : obj==='pace'   ? `Pace: ${document.getElementById('f14b').value||'—'}`
+    : obj==='tiempo' ? ('Tiempo: ' + t14)
+    : obj==='pace'   ? ('Pace: ' + t14b)
     : '—';
   document.getElementById('resumen').innerHTML =
-    `<div>👤 <b>${document.getElementById('f1').value||'—'}</b></div>
-     <div>🎯 ${dm||'—'} · ${objLabel}</div>
-     <div>📅 ${dias} días/semana</div>`;
+    '<div>👤 <b>' + (document.getElementById('f1').value||'—') + '</b></div>' +
+    '<div>🎯 ' + (dm||'—') + ' · ' + objLabel + '</div>' +
+    '<div>📅 ' + dias + ' días/semana</div>';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1564,6 +1566,33 @@ function toggleNutrition(key) {
   if (el) el.classList.toggle('open');
 }
 
+function weekCounterHTML(weekNum, weekDone, weekTotal) {
+  if (weekDone > 0) {
+    return '<span id="wk-counter-' + weekNum + '" style="font-size:11px;color:var(--ok);font-family:\'Nunito\',sans-serif">' + weekDone + '/' + weekTotal + ' ✓</span>';
+  }
+  return '<span id="wk-counter-' + weekNum + '" style="display:none;font-size:11px;color:var(--ok);font-family:\'Nunito\',sans-serif"></span>';
+}
+
+function optionalDaysHTML(optDays) {
+  if (!optDays || optDays.length === 0) return '';
+  const rows = optDays.map(function(o) {
+    return '<div class="opt-row">' +
+      '<div class="opt-day">' + o.day.substring(0,3) + '</div>' +
+      '<div class="opt-content">' +
+        '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">' +
+          '<span class="opt-tipo">' + o.tipo + '</span>' +
+          '<span class="badge-opt">Opcional</span>' +
+        '</div>' +
+        '<div class="opt-det">' + o.detalle + '</div>' +
+        '<div class="opt-note">' + o.note + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  return '<div class="opt-section">' +
+    '<div class="opt-title"><i class="fa-solid fa-star"></i> Actividades opcionales — días libres</div>' +
+    rows +
+    '</div>';
+}
 function updateWeekCounter(weekNum) {
   if (!planObj) return;
   const planId = currentPlanId || 'preview';
@@ -1575,7 +1604,7 @@ function updateWeekCounter(weekNum) {
   // Find the counter span inside the accordion header for this week
   const counter = document.getElementById('wk-counter-'+weekNum);
   if (counter) {
-    counter.textContent = done > 0 ? `${done}/${total} ✓` : '';
+    counter.textContent = done > 0 ? (done + '/' + total + ' ✓') : '';
     counter.style.display = done > 0 ? 'inline' : 'none';
   }
 }
@@ -1698,36 +1727,21 @@ function renderPlan(plan, fd) {
         </div>`;
     }).join('');
 
-    return `<div class="ai">
-      <div class="ah ${i===0?'open':''}" onclick="togAcc(this)">
-        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-          <span><span class="tr">Semana ${w.num}</span>${tag}</span>
-          <span style="font-size:12px;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:600">${w.vol} km</span>
-          ${weekDone>0?`<span id="wk-counter-${w.num}" style="font-size:11px;color:var(--ok);font-family:'Nunito',sans-serif">${weekDone}/${weekTotal} ✓</span>`:`<span id="wk-counter-${w.num}" style="display:none;font-size:11px;color:var(--ok);font-family:'Nunito',sans-serif"></span>`}
-        </div>
-        <i class="fa-solid fa-chevron-down chv"></i>
-      </div>
-      <div class="abody ${i===0?'open':''}">
-        <div class="week-obj">${w.objetivo}</div>
-        ${sessHTML}
-        ${w.optionalDays && w.optionalDays.length > 0 ? `
-        <div class="opt-section">
-          <div class="opt-title"><i class="fa-solid fa-star"></i> Actividades opcionales — días libres</div>
-          ${w.optionalDays.map(o => `
-            <div class="opt-row">
-              <div class="opt-day">${o.day.substring(0,3)}</div>
-              <div class="opt-content">
-                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
-                  <span class="opt-tipo">${o.tipo}</span>
-                  <span class="badge-opt">Opcional</span>
-                </div>
-                <div class="opt-det">${o.detalle}</div>
-                <div class="opt-note">${o.note}</div>
-              </div>
-            </div>`).join('')}
-        </div>` : ''}
-      </div>
-    </div>`;
+    return '<div class="ai">' +
+      '<div class="ah ' + (i===0?'open':'') + '" onclick="togAcc(this)">' +
+        '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">' +
+          '<span><span class="tr">Semana ' + w.num + '</span>' + tag + '</span>' +
+          '<span style="font-size:12px;color:var(--muted);font-family:\'Nunito\',sans-serif;font-weight:600">' + w.vol + ' km</span>' +
+          weekCounterHTML(w.num, weekDone, weekTotal) +
+        '</div>' +
+        '<i class="fa-solid fa-chevron-down chv"></i>' +
+      '</div>' +
+      '<div class="abody ' + (i===0?'open':'') + '">' +
+        '<div class="week-obj">' + w.objetivo + '</div>' +
+        sessHTML +
+        optionalDaysHTML(w.optionalDays) +
+      '</div>' +
+    '</div>';
   }).join('');
 
   // Tips
@@ -1753,32 +1767,184 @@ function setPlanes(a) { localStorage.setItem('runcoach_planes', JSON.stringify(a
 
 function savePlan() {
   if (!planObj || !formData) return;
-  const planes = getPlanes();
-  const id = Date.now() + '-' + Math.random().toString(36).slice(2);
+  let planes = getPlanes();
+  const editId = window._editingPlanId;
+
+  const id = editId || (Date.now() + '-' + Math.random().toString(36).slice(2));
   const plan = {
     id,
     nombre: formData.nombrePlan,
     distMeta: formData.distMeta,
-    fechaCreacion: new Date().toISOString().slice(0,10),
+    fechaCreacion: editId
+      ? (planes.find(p => p.id === editId)?.fechaCreacion || new Date().toISOString().slice(0,10))
+      : new Date().toISOString().slice(0,10),
+    fechaEditado: editId ? new Date().toISOString().slice(0,10) : null,
     totalW: planObj.totalW,
     perfil: `${formData.nombre}, ${formData.edad} años`,
-    planObj: planObj,
-    formData: formData,
+    planObj,
+    formData,
   };
-  planes.unshift(plan);
+
+  if (editId) {
+    // Replace existing plan in same position
+    const idx = planes.findIndex(p => p.id === editId);
+    if (idx !== -1) planes[idx] = plan;
+    else planes.unshift(plan);
+    window._editingPlanId = null;
+  } else {
+    planes.unshift(plan);
+  }
+
   setPlanes(planes);
   currentPlanId = id;
+
   const btn = document.getElementById('bsave');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Plan guardado';
+  btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (editId ? 'Plan actualizado' : 'Plan guardado');
   btn.style.background = 'linear-gradient(135deg,#388E3C,#66BB6A)';
-  showToast('¡Plan guardado correctamente!');
+  showToast(editId ? '¡Plan actualizado correctamente!' : '¡Plan guardado correctamente!');
 }
 
 function deletePlan(id) {
   setPlanes(getPlanes().filter(p => p.id !== id));
   renderHistory();
   showToast('Plan eliminado');
+}
+
+function editPlan(id) {
+  const p = getPlanes().find(p => p.id === id);
+  if (!p) return;
+  const d = p.formData;
+
+  // Go to wizard and preload all fields
+  currentStep = 1;
+  renderStep(1);
+  showScreen('wizard');
+
+  // Use requestAnimationFrame to ensure DOM is ready
+  requestAnimationFrame(() => {
+    // ── Step 1 ──
+    setVal('f1', d.nombre);
+    setVal('f2', d.edad);
+    setVal('f3', d.sexo);
+    setVal('f4', d.peso);
+    setVal('f5', d.estatura);
+    setVal('f6', d.fcReposo || '');
+    setVal('f7', d.fcMax || '');
+
+    // ── Step 2 ──
+    setVal('f8', d.experiencia);
+    setVal('f9', d.kmSemanales);
+    setVal('f10', d.ritmoHabitual || '');
+    setVal('f11', d.distMax);
+    setVal('f12', d.mejorTiempo || '');
+
+    // ── Step 3 ──
+    const dmVal = d.distMetaVal || d.distMeta;
+    setVal('f13', dmVal);
+    if (dmVal === 'otra') {
+      document.getElementById('otra-wrap').style.display = 'block';
+      setVal('f13b', d.distMeta);
+    }
+    if (d.objetivo) {
+      const objEl = document.querySelector(`#rg-obj .ro[data-v="${d.objetivo}"]`);
+      if (objEl) { selR(objEl, 'rg-obj', d.objetivo); toggleObjExtra(); }
+      else {
+        // fallback: find by matching value
+        document.querySelectorAll('#rg-obj .ro').forEach(el => {
+          if (el.dataset.v === d.objetivo) { selR(el, 'rg-obj', d.objetivo); toggleObjExtra(); }
+        });
+      }
+    }
+    setVal('f14', d.tiempoObj || '');
+    setVal('f14b', d.paceObj || '');
+    setVal('f15', d.fechaCarrera || '');
+    if (d.fechaCarrera) calcSem();
+
+    // ── Step 4 ──
+    // Days
+    document.querySelectorAll('#dts .dt').forEach(btn => {
+      btn.classList.toggle('sel', (d.dias || []).includes(btn.dataset.day));
+    });
+    // Weekday duration
+    const durVal = [30,45,60,75,90].includes(d.durMax) ? String(d.durMax) : 'otro';
+    setVal('f16', durVal);
+    if (durVal === 'otro') {
+      document.getElementById('otra-duracion-wrap').style.display = 'block';
+      setVal('f16b', d.durMax);
+    }
+    // Long run duration
+    setVal('f16c', d.durMaxLargo || 120);
+    // Schedule
+    if (d.horario) {
+      document.querySelectorAll('#rg-hor .ro').forEach(el => {
+        if (el.dataset.v === d.horario) selR(el, 'rg-hor', d.horario);
+      });
+    }
+
+    // ── Step 5 ──
+    const lesVal = d.lesion ? 'si' : 'no';
+    document.querySelectorAll('#rg-les .ro').forEach(el => { if (el.dataset.v === lesVal) selR(el, 'rg-les', lesVal); });
+    togLes();
+    setVal('f17', d.lesionDesc || '');
+    const cirVal = d.cirugia ? 'si' : 'no';
+    document.querySelectorAll('#rg-cir .ro').forEach(el => { if (el.dataset.v === cirVal) selR(el, 'rg-cir', cirVal); });
+    togCir();
+    setVal('f18', d.cirugiaDesc || '');
+    if (d.autorizacion) {
+      document.querySelectorAll('#rg-aut .ro').forEach(el => { if (el.dataset.v === d.autorizacion) selR(el, 'rg-aut', d.autorizacion); });
+    }
+
+    // ── Step 6 ──
+    const supItems = (d.superficie || '').split(', ').map(s => s.trim());
+    document.querySelectorAll('#cg-sup .co').forEach(el => {
+      const txt = el.textContent.trim().replace(/^[^\s]+\s/, '');
+      el.classList.toggle('sel', supItems.some(s => el.textContent.includes(s.replace(/[🛣️🌿🏟️🏃🔄]/g,'').trim())));
+    });
+    if (d.topografia) {
+      document.querySelectorAll('#rg-top .ro').forEach(el => { if (el.dataset.v === d.topografia) selR(el, 'rg-top', d.topografia); });
+    }
+    const gymVal = d.gimnasio ? 'si' : 'no';
+    document.querySelectorAll('#rg-gym .ro').forEach(el => { if (el.dataset.v === gymVal) selR(el, 'rg-gym', gymVal); });
+    setVal('f19', d.clima || '');
+
+    // ── Step 7 ──
+    if (d.sueno) {
+      const sl = document.getElementById('f20');
+      sl.value = d.sueno;
+      document.getElementById('sv').textContent = d.sueno + ' hrs';
+    }
+    if (d.estres) {
+      document.querySelectorAll('#rg-est .ro').forEach(el => { if (el.dataset.v === d.estres) selR(el, 'rg-est', d.estres); });
+    }
+    const actItems = (d.actividades || '').split(', ').map(s => s.trim()).filter(Boolean);
+    document.querySelectorAll('#cg-act .co').forEach(el => {
+      actItems.forEach(act => { if (el.textContent.includes(act.replace(/[🚴🏊🧘💪🤸⚽🥊🚶❌]/g,'').trim())) el.classList.add('sel'); });
+    });
+    setVal('f21', d.alimentacion || '');
+
+    // ── Step 8 ──
+    const relVal = d.relojGPS ? 'si' : 'no';
+    document.querySelectorAll('#rg-rel .ro').forEach(el => { if (el.dataset.v === relVal) selR(el, 'rg-rel', relVal); });
+    if (d.monitorFC) {
+      document.querySelectorAll('#rg-mfc .ro').forEach(el => { if (el.dataset.v === d.monitorFC) selR(el, 'rg-mfc', d.monitorFC); });
+    }
+    const appItems = (d.apps || '').split(', ').map(s => s.trim()).filter(Boolean);
+    document.querySelectorAll('#cg-apps .co').forEach(el => {
+      appItems.forEach(app => { if (el.textContent.includes(app)) el.classList.add('sel'); });
+    });
+    setVal('f22', d.nombrePlan || '');
+
+    // Store the ID so when regenerated it overwrites the same plan
+    window._editingPlanId = id;
+
+    showToast('Plan cargado — modifica lo que necesites y genera de nuevo');
+  });
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el && val !== undefined && val !== null) el.value = val;
 }
 
 function viewPlan(id) {
@@ -1807,7 +1973,13 @@ function renderHistory() {
   }
   c.innerHTML = planes.map(p => `
     <div class="card mb4 hc" style="margin-bottom:14px">
-      <div class="hch"><div class="hcn">${esc(p.nombre)}</div><div class="hcd">${p.fechaCreacion}</div></div>
+      <div class="hch">
+        <div class="hcn">${esc(p.nombre)}</div>
+        <div style="text-align:right">
+          <div class="hcd">${p.fechaCreacion}</div>
+          ${p.fechaEditado ? '<div style="font-size:11px;color:var(--pri)">editado ' + p.fechaEditado + '</div>' : ''}
+        </div>
+      </div>
       <div class="hcm">
         <span class="chip"><i class="fa-solid fa-bullseye"></i> ${esc(p.distMeta)}</span>
         <span class="chip"><i class="fa-solid fa-calendar-week"></i> ${p.totalW} semanas</span>
@@ -1815,7 +1987,8 @@ function renderHistory() {
       </div>
       <div class="hca">
         <button class="btn bor bsm" onclick="viewPlan('${p.id}')"><i class="fa-solid fa-file-lines"></i> Ver plan</button>
-        <button class="btn bsm" style="border:2px solid #444;color:#777;background:transparent" onclick="confirmDel('${p.id}','${esc(p.nombre).replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
+        <button class="btn bsm" style="border:1px solid rgba(38,198,218,.3);color:var(--pri);background:rgba(38,198,218,.08)" onclick="editPlan('${p.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
+        <button class="btn bsm" style="border:1px solid #333;color:#666;background:transparent" onclick="confirmDel('${p.id}','${esc(p.nombre).replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
       </div>
     </div>`).join('');
 }

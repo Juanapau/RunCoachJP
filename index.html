@@ -912,10 +912,10 @@ function buildPlan() {
   formData = collect();
   showScreen('loading');
   startLoadMsg();
-  // Small delay for UX
+  const editId = window._editingPlanId || null;
   setTimeout(() => {
     planObj = generatePlan(formData);
-    currentPlanId = 'preview';
+    currentPlanId = editId || 'preview';
     stopLoadMsg();
     renderPlan(planObj, formData);
     showScreen('plan');
@@ -1287,37 +1287,43 @@ function fmtPace(sec, f) {
   const s = Math.round(sec*f);
   return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')} min/km`;
 }
-function fmtPaceRange(sec, f) {
-  const lo = Math.round(sec*(f-0.02)), hi = Math.round(sec*(f+0.02));
+function fmtPaceRange(sec, loF, hiF) {
+  // Accept either (sec, centerFactor) or (sec, loFactor, hiFactor)
+  let lo, hi;
+  if (hiF === undefined) { lo = Math.round(sec*(loF-0.02)); hi = Math.round(sec*(loF+0.02)); }
+  else { lo = Math.round(sec*loF); hi = Math.round(sec*hiF); }
   const fmt = v => `${Math.floor(v/60)}:${(v%60).toString().padStart(2,'0')}`;
   return `${fmt(lo)} - ${fmt(hi)} min/km`;
 }
 
 function formatGarmin(s, p, bps, useGPS) {
-  // Extract km robustly - detail format is "8 km · 6:30 min/km"
+  // bps = base easy pace in sec/km (higher = slower)
+  // Factor > 1 = SLOWER, Factor < 1 = FASTER
   const kmMatch = s.detail.match(/^(\d+(?:\.\d+)?)\s*km/);
   const km = kmMatch ? parseFloat(kmMatch[1]) : 5;
 
   const steps = [];
 
   if (s.badge === 'bs') {
+    // Easy run: warm 10% slower, main at easy pace, cool 10% slower
     const warmKm = Math.max(1, Math.round(km * 0.1));
     const mainKm = Math.max(1, km - warmKm * 2);
     const estTotal = fmtTime(Math.round(km * bps));
-    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.05) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(warmKm*Math.round(bps*1.05)) });
-    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,0.95) : null, paceRange: useGPS ? fmtPaceRange(bps,0.95) : null, estTime: fmtTime(mainKm*Math.round(bps*0.95)) });
-    steps.push({ color:'green', name:'Enfriamiento',  dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.05) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(warmKm*Math.round(bps*1.05)) });
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.12) : null, paceRange: useGPS ? fmtPaceRange(bps,1.10,1.15) : null, estTime: fmtTime(warmKm*Math.round(bps*1.12)) });
+    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.0)  : null, paceRange: useGPS ? fmtPaceRange(bps,0.98,1.02)  : null, estTime: fmtTime(mainKm*Math.round(bps)) });
+    steps.push({ color:'green', name:'Enfriamiento',  dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.12) : null, paceRange: useGPS ? fmtPaceRange(bps,1.10,1.15) : null, estTime: fmtTime(warmKm*Math.round(bps*1.12)) });
     return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
   }
 
   if (s.badge === 'bl') {
+    // Long run: all at easy/conversational pace, slightly slower than easy
     const warmKm = Math.max(2, Math.round(km * 0.1));
     const coolKm = Math.max(1, Math.round(km * 0.05));
     const mainKm = Math.max(1, km - warmKm - coolKm);
-    const estTotal = fmtTime(Math.round(km * bps * 1.05));
-    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.1)  : null, paceRange: useGPS ? fmtPaceRange(bps,1.1)  : null, estTime: fmtTime(warmKm*Math.round(bps*1.1)) });
-    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.05) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05) : null, estTime: fmtTime(mainKm*Math.round(bps*1.05)) });
-    steps.push({ color:'green', name:'Enfriamiento',  dist:`${coolKm} km`, pace: useGPS ? fmtPace(bps,1.1)  : null, paceRange: useGPS ? fmtPaceRange(bps,1.1)  : null, estTime: fmtTime(coolKm*Math.round(bps*1.1)) });
+    const estTotal = fmtTime(Math.round(km * bps * 1.08));
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.15) : null, paceRange: useGPS ? fmtPaceRange(bps,1.12,1.18) : null, estTime: fmtTime(warmKm*Math.round(bps*1.15)) });
+    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.08) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05,1.10) : null, estTime: fmtTime(mainKm*Math.round(bps*1.08)) });
+    steps.push({ color:'green', name:'Enfriamiento',  dist:`${coolKm} km`, pace: useGPS ? fmtPace(bps,1.15) : null, paceRange: useGPS ? fmtPaceRange(bps,1.12,1.18) : null, estTime: fmtTime(coolKm*Math.round(bps*1.15)) });
     return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
   }
 
@@ -1326,18 +1332,24 @@ function formatGarmin(s, p, bps, useGPS) {
     const reps = m ? +m[1] : 4, dist = m ? +m[2] : 800;
     const warmM = 600, coolM = 600, recM = 400;
     const totalM = warmM + reps*(dist+recM) + coolM;
-    const repTimeSec = Math.round(dist/1000 * bps * 0.75);
-    const recTimeSec = Math.round(recM/1000 * bps * 1.2);
-    const estTotal = fmtTime(Math.round(warmM/1000*bps) + reps*(repTimeSec+recTimeSec) + Math.round(coolM/1000*bps));
-    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmM} m`, pace:null, paceRange:null, estTime: fmtTime(Math.round(warmM/1000*bps)) });
+    // Interval pace: 15% FASTER than easy pace (factor 0.85)
+    // Recovery pace: 40% SLOWER than easy pace (factor 1.40) — jogging
+    const intervalFactor = 0.85;
+    const recovFactor = 1.40;
+    const repTimeSec = Math.round(dist/1000 * bps * intervalFactor);
+    const recTimeSec = Math.round(recM/1000 * bps * recovFactor);
+    const warmTimeSec = Math.round(warmM/1000 * bps * 1.12);
+    const coolTimeSec = Math.round(coolM/1000 * bps * 1.12);
+    const estTotal = fmtTime(warmTimeSec + reps*(repTimeSec+recTimeSec) + coolTimeSec);
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmM} m`, pace: useGPS ? fmtPace(bps,1.12) : null, paceRange: useGPS ? fmtPaceRange(bps,1.10,1.15) : null, estTime: fmtTime(warmTimeSec) });
     steps.push({
       type:'repeat', reps,
       substeps: [
-        { color:'blue', name:'Carrera',      dist:`${dist} m`, pace: useGPS ? fmtPace(bps,0.75) : null, paceRange: useGPS ? fmtPaceRange(bps,0.75) : null, estTime: fmtTime(repTimeSec) },
-        { color:'gray', name:'Recuperación', dist:`${recM} m`, pace: null, paceRange: null, estTime: fmtTime(recTimeSec) },
+        { color:'blue', name:'Serie',         dist:`${dist} m`, pace: useGPS ? fmtPace(bps,intervalFactor) : null, paceRange: useGPS ? fmtPaceRange(bps,intervalFactor-0.02,intervalFactor+0.02) : null, estTime: fmtTime(repTimeSec) },
+        { color:'gray', name:'Recuperación',  dist:`${recM} m`, pace: useGPS ? fmtPace(bps,recovFactor) : null,    paceRange: useGPS ? fmtPaceRange(bps,recovFactor-0.05,recovFactor+0.05) : null, estTime: fmtTime(recTimeSec) },
       ]
     });
-    steps.push({ color:'green', name:'Enfriamiento', dist:`${coolM} m`, pace:null, paceRange:null, estTime: fmtTime(Math.round(coolM/1000*bps)) });
+    steps.push({ color:'green', name:'Enfriamiento', dist:`${coolM} m`, pace: useGPS ? fmtPace(bps,1.12) : null, paceRange: useGPS ? fmtPaceRange(bps,1.10,1.15) : null, estTime: fmtTime(coolTimeSec) });
     return { type:'garmin', name: s.tipo, totalDist:`${(totalM/1000).toFixed(1)} km`, estTime: estTotal, steps };
   }
 
@@ -1896,10 +1908,11 @@ function editPlan(id) {
     }
 
     // ── Step 6 ──
-    const supItems = (d.superficie || '').split(', ').map(s => s.trim());
+    // Surface checkboxes - match by stripping emojis and comparing
+    const supItems = (d.superficie || '').split(', ').map(s => s.trim().toLowerCase());
     document.querySelectorAll('#cg-sup .co').forEach(el => {
-      const txt = el.textContent.trim().replace(/^[^\s]+\s/, '');
-      el.classList.toggle('sel', supItems.some(s => el.textContent.includes(s.replace(/[🛣️🌿🏟️🏃🔄]/g,'').trim())));
+      const txt = el.textContent.trim().replace(/[\u{1F000}-\u{1FFFF}]/gu,'').replace(/[^\w\s]/g,'').trim().toLowerCase();
+      el.classList.toggle('sel', supItems.some(s => s.replace(/[^\w\s]/g,'').trim().toLowerCase().includes(txt) || txt.includes(s.replace(/[^\w\s]/g,'').trim().toLowerCase())));
     });
     if (d.topografia) {
       document.querySelectorAll('#rg-top .ro').forEach(el => { if (el.dataset.v === d.topografia) selR(el, 'rg-top', d.topografia); });
@@ -1917,9 +1930,22 @@ function editPlan(id) {
     if (d.estres) {
       document.querySelectorAll('#rg-est .ro').forEach(el => { if (el.dataset.v === d.estres) selR(el, 'rg-est', d.estres); });
     }
-    const actItems = (d.actividades || '').split(', ').map(s => s.trim()).filter(Boolean);
+    // Activities - clear all first, then select matching
+    document.querySelectorAll('#cg-act .co').forEach(el => el.classList.remove('sel'));
+    const actItems = (d.actividades || '').split(', ').map(s => s.trim().toLowerCase()).filter(Boolean);
     document.querySelectorAll('#cg-act .co').forEach(el => {
-      actItems.forEach(act => { if (el.textContent.includes(act.replace(/[🚴🏊🧘💪🤸⚽🥊🚶❌]/g,'').trim())) el.classList.add('sel'); });
+      const txt = el.textContent.trim().replace(/[\u{1F000}-\u{1FFFF}]/gu,'').replace(/[^\w\sáéíóúüñ]/g,'').trim().toLowerCase();
+      if (actItems.some(a => {
+        const ac = a.replace(/[^\w\sáéíóúüñ]/g,'').trim().toLowerCase();
+        return txt.includes(ac) || ac.includes(txt);
+      })) el.classList.add('sel');
+    });
+    // Apps checkboxes
+    document.querySelectorAll('#cg-apps .co').forEach(el => el.classList.remove('sel'));
+    const appItems = (d.apps || '').split(', ').map(s => s.trim().toLowerCase()).filter(Boolean);
+    document.querySelectorAll('#cg-apps .co').forEach(el => {
+      const txt = el.textContent.trim().toLowerCase();
+      if (appItems.some(a => txt.includes(a) || a.includes(txt))) el.classList.add('sel');
     });
     setVal('f21', d.alimentacion || '');
 
@@ -1929,10 +1955,6 @@ function editPlan(id) {
     if (d.monitorFC) {
       document.querySelectorAll('#rg-mfc .ro').forEach(el => { if (el.dataset.v === d.monitorFC) selR(el, 'rg-mfc', d.monitorFC); });
     }
-    const appItems = (d.apps || '').split(', ').map(s => s.trim()).filter(Boolean);
-    document.querySelectorAll('#cg-apps .co').forEach(el => {
-      appItems.forEach(app => { if (el.textContent.includes(app)) el.classList.add('sel'); });
-    });
     setVal('f22', d.nombrePlan || '');
 
     // Store the ID so when regenerated it overwrites the same plan

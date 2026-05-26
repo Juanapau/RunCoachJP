@@ -1033,7 +1033,7 @@ const SESSION_TYPES = {
   }),
   intervalos: (reps, dist, pace, useGPS) => ({
     tipo: 'Series / Intervalos', badge: 'bi',
-    detail: `${reps}×${dist}m · ${pace(0.75)} + Recuperación suave`,
+    detail: `${reps}×${dist}m · ${pace(0.85)} + Recuperación suave`,
     note: `Calentar 10 min · ${reps} repeticiones de ${dist}m · Enfriar 10 min`,
     nutricion: 'Consume carbohidratos 2-3h antes: arroz, pasta, pan. Evita proteínas pesadas. Un plátano 30 min antes funciona bien.',
     hidratacion: 'Hidratación previa fundamental: 600ml en las 2h anteriores. Durante el calentamiento y recuperaciones: pequeños sorbos. Después: 500ml con electrolitos.'
@@ -1048,7 +1048,7 @@ const SESSION_TYPES = {
   fartlek: (km, pace, useGPS) => ({
     tipo: 'Fartlek', badge: 'bi',
     detail: `${km} km · alternando ritmos`,
-    note: `Ejemplo: 1 min rápido (${pace(0.75)}) / 2 min suave. Repetir.`,
+    note: `Ejemplo: 1 min rápido (${pace(0.85)}) / 2 min suave. Repetir.`,
     nutricion: 'Similar a intervalos: carbohidratos 2h antes. Un plátano o dátiles son una excelente opción rápida.',
     hidratacion: 'Hidratación normal previa. Si el fartlek dura más de 45 min, lleva agua o deja una botella en el punto de inicio.'
   }),
@@ -1374,7 +1374,7 @@ function formatStrava(s, p, bps, useGPS) {
   if (s.badge === 'bi') {
     const m = s.detail.match(/(\d+)[×x](\d+)/);
     const reps = m ? +m[1] : 4, dist = m ? +m[2] : 800;
-    const pace = useGPS ? fmtPace(bps, 0.75) : 'ritmo de esfuerzo alto';
+    const pace = useGPS ? fmtPace(bps, 0.85) : 'ritmo de esfuerzo alto';
     return {
       type: 'strava',
       description: [
@@ -1390,7 +1390,7 @@ function formatStrava(s, p, bps, useGPS) {
 
 function formatNike(s, p, bps, useGPS) {
   if (!useGPS) return null;
-  const pace = fmtPace(bps, s.badge==='bi'?0.75:s.badge==='bl'?1.05:0.95);
+  const pace = fmtPace(bps, s.badge==='bi'?0.85:s.badge==='bl'?1.05:0.95);
   return {
     type: 'nike',
     description: `${s.tipo} · ${s.detail.split('·')[0].trim()} · Objetivo: ${pace}`

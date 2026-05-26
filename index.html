@@ -1001,38 +1001,37 @@ function getMaxLongRun(raceKm, experiencia, distMaxCompletada) {
     '42K (Maratón)': 42,
   }[distMaxCompletada] || 5;
 
-  // Race-specific max long run targets (evidence-based)
+  // Race-specific max long run — never exceed race distance
   const raceMaxLong = {
-    5:  Math.min(10, raceKm * 2.0),   // 5K: up to 10km long run
-    10: Math.min(16, raceKm * 1.6),   // 10K: up to 16km
-    15: Math.min(20, raceKm * 1.4),   // 15K: up to 20km
-    21: Math.min(32, raceKm * 1.3),   // 21K: up to 32km
-    42: Math.min(38, raceKm * 0.9),   // 42K: up to 38km (never full race)
+    5:  4,    // 5K: max 4km
+    10: 8,    // 10K: max 8km
+    15: 12,   // 15K: max 12km
+    21: 18,   // 21K: max 18km
+    42: 36,   // 42K: max 36km
   };
-  const targetMax = raceMaxLong[raceKm] || Math.min(raceKm * 1.2, 35);
+  const key = [5,10,15,21,42].reduce((prev, curr) =>
+    Math.abs(curr - raceKm) < Math.abs(prev - raceKm) ? curr : prev
+  );
+  const targetMax = raceMaxLong[key] || Math.min(raceKm * 0.9, 36);
 
   // Can't jump more than 50% above current max in training
   const practicalMax = Math.min(targetMax, distMaxKm * 1.5);
 
-  return Math.max(raceKm * 0.5, practicalMax); // at minimum, reach 50% of race
+  return Math.max(Math.round(raceKm * 0.4), practicalMax);
 }
 
 function getPeakWeeklyVolume(raceKm, experiencia, kmSemanales, totalW) {
-  // Peak volume should be consistent with race distance
-  // General rule: peak week ~3-4x the race distance, but bounded by experience
   const racePeak = {
     5:  { principiante:25, basico:35, intermedio:45, avanzado:55 },
     10: { principiante:40, basico:55, intermedio:65, avanzado:80 },
     15: { principiante:50, basico:65, intermedio:80, avanzado:95 },
     21: { principiante:60, basico:75, intermedio:90, avanzado:110 },
-    42: { principiante:70, basico:85, intermedio:95, avanzado:100 },
+    42: { principiante:70, basico:90, intermedio:110, avanzado:130 },
   };
   const key = [5,10,15,21,42].reduce((prev, curr) =>
     Math.abs(curr - raceKm) < Math.abs(prev - raceKm) ? curr : prev
   );
   const targetPeak = (racePeak[key] || racePeak[10])[experiencia] || 60;
-
-  // Can't exceed 2x current weekly volume (safety)
   const safePeak = Math.max(kmSemanales * 1.6, kmSemanales + totalW * 1.5);
   return Math.min(targetPeak, Math.max(safePeak, kmSemanales + 8));
 }
@@ -1172,20 +1171,37 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
   const isTaper = fromEnd <= 3;
   const isRecovery = weekNum % 4 === 0 && !isTaper;
 
-  // Long run capped by race distance and runner history
+  // ── Long run calculation ──────────────────────────────────
   const maxLong = getMaxLongRun(raceKm, exp, distMaxCompletada);
-  const buildRatio = Math.min((weekNum - 1) / Math.max(totalW - 4, 1), 1.0);
+  const buildWeeks = totalW - 4; // weeks before taper
+  const buildRatio = Math.min((weekNum - 1) / Math.max(buildWeeks, 1), 1.0);
   const startLong = Math.max(Math.round(maxLong * 0.40), Math.round(raceKm * 0.3));
+
+  // Weeks at peak long run: last 3 build weeks before taper repeat maxLong
+  const peakLongWeeks = Math.min(3, Math.floor(buildWeeks * 0.25));
+  const peakStart = buildWeeks - peakLongWeeks;
+  const isAtPeak = weekNum > peakStart && weekNum <= buildWeeks && !isRecovery;
+
   const longKm = Math.min(
-    isRaceWeek ? Math.round(raceKm * 0.3) :
-    isTaper && fromEnd===2 ? Math.round(maxLong * 0.60) :
-    isTaper && fromEnd===3 ? Math.round(maxLong * 0.75) :
-    isRecovery ? Math.round(startLong + (maxLong - startLong) * buildRatio * 0.7) :
+    isRaceWeek        ? Math.round(raceKm * 0.25) :
+    isTaper && fromEnd===2 ? Math.round(maxLong * 0.55) :
+    isTaper && fromEnd===3 ? Math.round(maxLong * 0.72) :
+    isRecovery        ? Math.round(startLong + (maxLong - startLong) * buildRatio * 0.65) :
+    isAtPeak          ? maxLong :   // repeat max long in peak weeks
     Math.round(startLong + (maxLong - startLong) * buildRatio),
     maxLong
   );
-  const easyKm = Math.max(4, Math.round(weekVol * 0.18));
-  const intKm  = Math.max(4, Math.round(weekVol * 0.12));
+
+  // ── Weekday run km — max 14km, varied ────────────────────
+  // Base easy km from volume, capped at 14, varied by position in week
+  const rawEasy = Math.max(5, Math.round(weekVol * 0.17));
+  const maxWeekday = 14;
+  const easyBase = Math.min(rawEasy, maxWeekday);
+  // Variation: alternate between shorter and medium runs (±15%)
+  const easyShort  = Math.max(5, Math.round(easyBase * 0.82));
+  const easyMedium = Math.min(maxWeekday, Math.round(easyBase * 1.0));
+  const easyLong   = Math.min(maxWeekday, Math.round(easyBase * 1.15));
+  const intKm = Math.max(4, Math.min(12, Math.round(weekVol * 0.12)));
 
   // Weekend day for long run
   const weekend = ['Sábado','Domingo'];
@@ -1200,12 +1216,12 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
     pool = days.map((d, i) => {
       if (i === longIdx) return {day:i, s: SESSION_TYPES.carrera(formData.distMeta)};
       if (i === longIdx - 1 || i === longIdx - 2) return {day:i, s: SESSION_TYPES.descanso()};
-      return {day:i, s: SESSION_TYPES.suave(Math.max(4, Math.round(weekVol*0.2)), pace, useGPS)};
+      return {day:i, s: SESSION_TYPES.suave(Math.max(4, Math.round(easyBase*0.7)), pace, useGPS)};
     });
   } else if (isTaper || isRecovery) {
     pool = days.map((d, i) => {
       if (i === longIdx) return {day:i, s: SESSION_TYPES.largo(longKm, pace, useGPS)};
-      if (i === 0) return {day:i, s: SESSION_TYPES.suave(Math.round(easyKm*(isRecovery?0.7:0.9)), pace, useGPS)};
+      if (i === 0) return {day:i, s: SESSION_TYPES.suave(Math.round(easyBase*(isRecovery?0.65:0.80)), pace, useGPS)};
       return {day:i, s: SESSION_TYPES.descansoActivo()};
     });
   } else {
@@ -1216,13 +1232,18 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
     let sessions = new Array(n).fill(null);
     sessions[longIdx] = SESSION_TYPES.largo(longKm, pace, useGPS);
     let filled = 0;
+    // Track easy run counter to vary km
+    let easyCount = 0;
     for (let i = 0; i < n; i++) {
       if (sessions[i]) continue;
       if (hasGym && filled===0 && !hasLesion) { sessions[i]=SESSION_TYPES.fuerza(); filled++; continue; }
       if (hasSeries && filled<1)              { sessions[i]=SESSION_TYPES.intervalos(seriesReps, seriesDist, pace, useGPS); filled++; continue; }
       if (hasFartlek && filled<1)             { sessions[i]=SESSION_TYPES.fartlek(intKm, pace, useGPS); filled++; continue; }
       if (i===n-1)                            { sessions[i]=SESSION_TYPES.descansoActivo(); continue; }
-      sessions[i] = SESSION_TYPES.suave(easyKm, pace, useGPS);
+      // Vary easy run distances: short → medium → long → short...
+      const varKm = easyCount % 3 === 0 ? easyShort : easyCount % 3 === 1 ? easyMedium : easyLong;
+      sessions[i] = SESSION_TYPES.suave(varKm, pace, useGPS);
+      easyCount++;
     }
     pool = days.map((d,i) => ({day:i, s: sessions[i]||SESSION_TYPES.descansoActivo()}));
   }

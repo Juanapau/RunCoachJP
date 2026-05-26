@@ -1016,17 +1016,27 @@ function planWeeks(d) {
 }
 
 // ─── SESSION TEMPLATES ────────────────────────────────────
+// avgPace helper: weighted average of warm+main+cool segments
+function avgPaceStr(km, warmF, mainF, coolF, warmRatio, coolRatio, pace, useGPS) {
+  if (!useGPS) return pace(mainF); // for non-GPS just show main effort
+  const mainRatio = 1 - warmRatio - coolRatio;
+  const avgF = warmF * warmRatio + mainF * mainRatio + coolF * coolRatio;
+  return pace(avgF);
+}
+
 const SESSION_TYPES = {
   suave: (km, pace, useGPS) => ({
     tipo: 'Rodaje suave', badge: 'bs',
-    detail: `${km} km · ${pace(0.95)}`,
+    // warm=10% at 1.12, main=80% at 1.0, cool=10% at 1.12 → avg ≈ 1.024
+    detail: `${km} km · ${avgPaceStr(km, 1.12, 1.0, 1.12, 0.1, 0.1, pace, useGPS)}`,
     note: 'Ritmo conversacional, puedes hablar con alguien',
     nutricion: 'Desayuno ligero 1-2h antes: avena o tostada con fruta. Evita alimentos grasos.',
     hidratacion: `Toma 500ml de agua 30 min antes. Durante: ${km>8?'cada 20-25 min, 150ml':'puedes esperar al final'}. Después: 500ml en la primera hora.`
   }),
   largo: (km, pace, useGPS) => ({
     tipo: 'Tirada larga', badge: 'bl',
-    detail: `${km} km · ${pace(1.05)}`,
+    // warm=10% at 1.15, main=85% at 1.08, cool=5% at 1.15 → avg ≈ 1.094
+    detail: `${km} km · ${avgPaceStr(km, 1.15, 1.08, 1.15, 0.1, 0.05, pace, useGPS)}`,
     note: 'El ritmo más suave de la semana. Llevar agua.',
     nutricion: `Noche anterior: cena rica en carbohidratos (pasta, arroz, papa). Mañana de la tirada: desayuno 2h antes, incluye plátano y avena. ${km>15?'Lleva geles o dátiles para consumir cada 45 min.':''}`,
     hidratacion: `Bebe 500ml al despertar. Durante: cada 15-20 min, 150-200ml. ${km>15?'Considera bebida isotónica si dura más de 1h 30min.':''} Después: repón con 750ml-1L en las siguientes 2h.`
@@ -1040,7 +1050,7 @@ const SESSION_TYPES = {
   }),
   progresion: (km, pace, useGPS) => ({
     tipo: 'Rodaje de progresión', badge: 'bi',
-    detail: `${km} km · inicio ${pace(1.05)} → final ${pace(0.85)}`,
+    detail: `${km} km · inicio ${pace(1.08)} → final ${pace(0.88)}`,
     note: 'Empezar suave y terminar al límite del umbral aeróbico',
     nutricion: 'Comida principal 2-3h antes. El cuerpo necesita glucógeno disponible para la parte final intensa. Evita entrenar en ayunas.',
     hidratacion: '500ml antes. Si dura más de 50 min lleva agua. Rehidrata bien después con agua o bebida deportiva.'

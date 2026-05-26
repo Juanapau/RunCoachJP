@@ -989,8 +989,6 @@ function getRaceDistKm(distMeta) {
 }
 
 function getMaxLongRun(raceKm, experiencia, distMaxCompletada) {
-  // Max long run should be 80-90% of race distance but never exceed physiological limits
-  // and must respect what the runner has already done
   const distMaxKm = {
     'Nunca he corrido formalmente': 3,
     'Menos de 5K': 4,
@@ -1001,23 +999,24 @@ function getMaxLongRun(raceKm, experiencia, distMaxCompletada) {
     '42K (Maratón)': 42,
   }[distMaxCompletada] || 5;
 
-  // Race-specific max long run — never exceed race distance
+  // Hard cap per race distance — ABSOLUTE, never exceeded
   const raceMaxLong = {
-    5:  4,    // 5K: max 4km
-    10: 8,    // 10K: max 8km
-    15: 12,   // 15K: max 12km
-    21: 18,   // 21K: max 18km
-    42: 36,   // 42K: max 36km
+    5:  4,
+    10: 8,
+    15: 12,
+    21: 18,
+    42: 36,
   };
   const key = [5,10,15,21,42].reduce((prev, curr) =>
     Math.abs(curr - raceKm) < Math.abs(prev - raceKm) ? curr : prev
   );
-  const targetMax = raceMaxLong[key] || Math.min(raceKm * 0.9, 36);
+  const hardCap = raceMaxLong[key] || Math.round(raceKm * 0.85);
 
-  // Can't jump more than 50% above current max in training
-  const practicalMax = Math.min(targetMax, distMaxKm * 1.5);
+  // Can't jump more than 40% above current max in one plan
+  const practicalMax = Math.min(hardCap, Math.max(distMaxKm * 1.4, distMaxKm + 4));
 
-  return Math.max(Math.round(raceKm * 0.4), practicalMax);
+  // Return the minimum — hard cap ALWAYS wins
+  return Math.min(hardCap, practicalMax);
 }
 
 function getPeakWeeklyVolume(raceKm, experiencia, kmSemanales, totalW) {
@@ -1173,34 +1172,41 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
 
   // ── Long run calculation ──────────────────────────────────
   const maxLong = getMaxLongRun(raceKm, exp, distMaxCompletada);
-  const buildWeeks = totalW - 4; // weeks before taper
+  const buildWeeks = totalW - 4;
   const buildRatio = Math.min((weekNum - 1) / Math.max(buildWeeks, 1), 1.0);
-  const startLong = Math.max(Math.round(maxLong * 0.40), Math.round(raceKm * 0.3));
+  const startLong = Math.max(Math.round(maxLong * 0.35), 3);
 
-  // Weeks at peak long run: last 3 build weeks before taper repeat maxLong
+  // Weeks at peak long run: last 2-3 build weeks repeat maxLong
   const peakLongWeeks = Math.min(3, Math.floor(buildWeeks * 0.25));
   const peakStart = buildWeeks - peakLongWeeks;
   const isAtPeak = weekNum > peakStart && weekNum <= buildWeeks && !isRecovery;
 
-  const longKm = Math.min(
-    isRaceWeek        ? Math.round(raceKm * 0.25) :
+  const rawLong =
+    isRaceWeek        ? Math.round(maxLong * 0.25) :
     isTaper && fromEnd===2 ? Math.round(maxLong * 0.55) :
     isTaper && fromEnd===3 ? Math.round(maxLong * 0.72) :
     isRecovery        ? Math.round(startLong + (maxLong - startLong) * buildRatio * 0.65) :
-    isAtPeak          ? maxLong :   // repeat max long in peak weeks
-    Math.round(startLong + (maxLong - startLong) * buildRatio),
-    maxLong
-  );
+    isAtPeak          ? maxLong :
+    Math.round(startLong + (maxLong - startLong) * buildRatio);
 
-  // ── Weekday run km — max 14km, varied ────────────────────
-  // Base easy km from volume, capped at 14, varied by position in week
+  // ALWAYS enforce the hard cap — no exceptions
+  const longKm = Math.min(rawLong, maxLong);
+
+  // ── Weekday run km — max 14km, varied by week ────────────
   const rawEasy = Math.max(5, Math.round(weekVol * 0.17));
   const maxWeekday = 14;
   const easyBase = Math.min(rawEasy, maxWeekday);
-  // Variation: alternate between shorter and medium runs (±15%)
-  const easyShort  = Math.max(5, Math.round(easyBase * 0.82));
+  // Three distinct distances that rotate differently each week
+  const easyShort  = Math.max(5, Math.round(easyBase * 0.80));
   const easyMedium = Math.min(maxWeekday, Math.round(easyBase * 1.0));
-  const easyLong   = Math.min(maxWeekday, Math.round(easyBase * 1.15));
+  const easyLong2  = Math.min(maxWeekday, Math.round(easyBase * 1.18));
+  // Rotate pattern offset by week so same-position days vary week to week
+  const weekOffset = (weekNum - 1) % 3;
+  const easyPattern = [
+    [easyShort, easyMedium, easyLong2],
+    [easyMedium, easyLong2, easyShort],
+    [easyLong2, easyShort, easyMedium],
+  ][weekOffset];
   const intKm = Math.max(4, Math.min(12, Math.round(weekVol * 0.12)));
 
   // Weekend day for long run
@@ -1232,7 +1238,6 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
     let sessions = new Array(n).fill(null);
     sessions[longIdx] = SESSION_TYPES.largo(longKm, pace, useGPS);
     let filled = 0;
-    // Track easy run counter to vary km
     let easyCount = 0;
     for (let i = 0; i < n; i++) {
       if (sessions[i]) continue;
@@ -1240,8 +1245,8 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
       if (hasSeries && filled<1)              { sessions[i]=SESSION_TYPES.intervalos(seriesReps, seriesDist, pace, useGPS); filled++; continue; }
       if (hasFartlek && filled<1)             { sessions[i]=SESSION_TYPES.fartlek(intKm, pace, useGPS); filled++; continue; }
       if (i===n-1)                            { sessions[i]=SESSION_TYPES.descansoActivo(); continue; }
-      // Vary easy run distances: short → medium → long → short...
-      const varKm = easyCount % 3 === 0 ? easyShort : easyCount % 3 === 1 ? easyMedium : easyLong;
+      // Use week-offset pattern for variety — different km each week
+      const varKm = easyPattern[easyCount % easyPattern.length];
       sessions[i] = SESSION_TYPES.suave(varKm, pace, useGPS);
       easyCount++;
     }

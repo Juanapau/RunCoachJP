@@ -1858,109 +1858,85 @@ function editPlan(id) {
       document.getElementById('otra-wrap').style.display = 'block';
       setVal('f13b', d.distMeta);
     }
-    if (d.objetivo) {
-      const objEl = document.querySelector(`#rg-obj .ro[data-v="${d.objetivo}"]`);
-      if (objEl) { selR(objEl, 'rg-obj', d.objetivo); toggleObjExtra(); }
-      else {
-        // fallback: find by matching value
-        document.querySelectorAll('#rg-obj .ro').forEach(el => {
-          if (el.dataset.v === d.objetivo) { selR(el, 'rg-obj', d.objetivo); toggleObjExtra(); }
-        });
-      }
-    }
+    preSelR('rg-obj', d.objetivo); toggleObjExtra();
     setVal('f14', d.tiempoObj || '');
     setVal('f14b', d.paceObj || '');
     setVal('f15', d.fechaCarrera || '');
     if (d.fechaCarrera) calcSem();
 
     // ── Step 4 ──
-    // Days
     document.querySelectorAll('#dts .dt').forEach(btn => {
       btn.classList.toggle('sel', (d.dias || []).includes(btn.dataset.day));
     });
-    // Weekday duration
     const durVal = [30,45,60,75,90].includes(d.durMax) ? String(d.durMax) : 'otro';
     setVal('f16', durVal);
     if (durVal === 'otro') {
       document.getElementById('otra-duracion-wrap').style.display = 'block';
       setVal('f16b', d.durMax);
     }
-    // Long run duration
     setVal('f16c', d.durMaxLargo || 120);
-    // Schedule
-    if (d.horario) {
-      document.querySelectorAll('#rg-hor .ro').forEach(el => {
-        if (el.dataset.v === d.horario) selR(el, 'rg-hor', d.horario);
-      });
-    }
+    preSelR('rg-hor', d.horario);
 
     // ── Step 5 ──
-    const lesVal = d.lesion ? 'si' : 'no';
-    document.querySelectorAll('#rg-les .ro').forEach(el => { if (el.dataset.v === lesVal) selR(el, 'rg-les', lesVal); });
-    togLes();
+    preSelR('rg-les', d.lesion ? 'si' : 'no'); togLes();
     setVal('f17', d.lesionDesc || '');
-    const cirVal = d.cirugia ? 'si' : 'no';
-    document.querySelectorAll('#rg-cir .ro').forEach(el => { if (el.dataset.v === cirVal) selR(el, 'rg-cir', cirVal); });
-    togCir();
+    preSelR('rg-cir', d.cirugia ? 'si' : 'no'); togCir();
     setVal('f18', d.cirugiaDesc || '');
-    if (d.autorizacion) {
-      document.querySelectorAll('#rg-aut .ro').forEach(el => { if (el.dataset.v === d.autorizacion) selR(el, 'rg-aut', d.autorizacion); });
-    }
+    preSelR('rg-aut', d.autorizacion || 'nc');
 
     // ── Step 6 ──
-    // Surface checkboxes - match by stripping emojis and comparing
     const supItems = (d.superficie || '').split(', ').map(s => s.trim().toLowerCase());
     document.querySelectorAll('#cg-sup .co').forEach(el => {
-      const txt = el.textContent.trim().replace(/[\u{1F000}-\u{1FFFF}]/gu,'').replace(/[^\w\s]/g,'').trim().toLowerCase();
-      el.classList.toggle('sel', supItems.some(s => s.replace(/[^\w\s]/g,'').trim().toLowerCase().includes(txt) || txt.includes(s.replace(/[^\w\s]/g,'').trim().toLowerCase())));
+      const txt = el.textContent.trim().replace(/[^\w\sáéíóúüñ]/gu,'').trim().toLowerCase();
+      el.classList.toggle('sel', supItems.some(s => {
+        const sc = s.replace(/[^\w\sáéíóúüñ]/gu,'').trim().toLowerCase();
+        return txt.includes(sc) || sc.includes(txt);
+      }));
     });
-    if (d.topografia) {
-      document.querySelectorAll('#rg-top .ro').forEach(el => { if (el.dataset.v === d.topografia) selR(el, 'rg-top', d.topografia); });
-    }
-    const gymVal = d.gimnasio ? 'si' : 'no';
-    document.querySelectorAll('#rg-gym .ro').forEach(el => { if (el.dataset.v === gymVal) selR(el, 'rg-gym', gymVal); });
+    preSelR('rg-top', d.topografia);
+    preSelR('rg-gym', d.gimnasio ? 'si' : 'no');
     setVal('f19', d.clima || '');
 
     // ── Step 7 ──
     if (d.sueno) {
-      const sl = document.getElementById('f20');
-      sl.value = d.sueno;
+      document.getElementById('f20').value = d.sueno;
       document.getElementById('sv').textContent = d.sueno + ' hrs';
     }
-    if (d.estres) {
-      document.querySelectorAll('#rg-est .ro').forEach(el => { if (el.dataset.v === d.estres) selR(el, 'rg-est', d.estres); });
-    }
-    // Activities - clear all first, then select matching
+    preSelR('rg-est', d.estres);
     document.querySelectorAll('#cg-act .co').forEach(el => el.classList.remove('sel'));
     const actItems = (d.actividades || '').split(', ').map(s => s.trim().toLowerCase()).filter(Boolean);
     document.querySelectorAll('#cg-act .co').forEach(el => {
-      const txt = el.textContent.trim().replace(/[\u{1F000}-\u{1FFFF}]/gu,'').replace(/[^\w\sáéíóúüñ]/g,'').trim().toLowerCase();
-      if (actItems.some(a => {
-        const ac = a.replace(/[^\w\sáéíóúüñ]/g,'').trim().toLowerCase();
-        return txt.includes(ac) || ac.includes(txt);
-      })) el.classList.add('sel');
+      const txt = el.textContent.trim().replace(/[^\w\sáéíóúüñ]/gu,'').trim().toLowerCase();
+      if (actItems.some(a => { const ac = a.replace(/[^\w\sáéíóúüñ]/gu,'').trim().toLowerCase(); return txt.includes(ac) || ac.includes(txt); })) el.classList.add('sel');
     });
-    // Apps checkboxes
+    setVal('f21', d.alimentacion || '');
+
+    // ── Step 8 ──
+    preSelR('rg-rel', d.relojGPS ? 'si' : 'no');
+    preSelR('rg-mfc', d.monitorFC);
     document.querySelectorAll('#cg-apps .co').forEach(el => el.classList.remove('sel'));
     const appItems = (d.apps || '').split(', ').map(s => s.trim().toLowerCase()).filter(Boolean);
     document.querySelectorAll('#cg-apps .co').forEach(el => {
       const txt = el.textContent.trim().toLowerCase();
       if (appItems.some(a => txt.includes(a) || a.includes(txt))) el.classList.add('sel');
     });
-    setVal('f21', d.alimentacion || '');
-
-    // ── Step 8 ──
-    const relVal = d.relojGPS ? 'si' : 'no';
-    document.querySelectorAll('#rg-rel .ro').forEach(el => { if (el.dataset.v === relVal) selR(el, 'rg-rel', relVal); });
-    if (d.monitorFC) {
-      document.querySelectorAll('#rg-mfc .ro').forEach(el => { if (el.dataset.v === d.monitorFC) selR(el, 'rg-mfc', d.monitorFC); });
-    }
     setVal('f22', d.nombrePlan || '');
 
     // Store the ID so when regenerated it overwrites the same plan
     window._editingPlanId = id;
 
     showToast('Plan cargado — modifica lo que necesites y genera de nuevo');
+  });
+}
+
+// Helper to pre-select a radio group by value — reads value from onclick attribute
+function preSelR(groupId, value) {
+  if (!value) return;
+  document.querySelectorAll('#' + groupId + ' .ro').forEach(el => {
+    const match = el.getAttribute('onclick').match(/selR\(this,[^,]+,['"]([^'"]+)['"]\)/);
+    if (match && match[1] === value) {
+      selR(el, groupId, value);
+    }
   });
 }
 

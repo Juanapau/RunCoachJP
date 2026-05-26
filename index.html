@@ -313,6 +313,19 @@
     .gmt-repeat{background:#1e1e2e;border:1px solid rgba(255,255,255,.06);border-radius:8px;margin-bottom:6px;overflow:hidden}
     .gmt-repeat-label{font-size:13px;font-weight:700;color:#FFB74D;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:6px}
 
+    /* optional days */
+    .opt-section{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px}
+    .opt-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .opt-title i{color:var(--warn)}
+    .opt-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px}
+    .opt-row:last-child{border-bottom:none}
+    .opt-day{font-weight:700;color:var(--warn);font-size:12px;min-width:28px;padding-top:2px;flex-shrink:0}
+    .opt-content{flex:1}
+    .opt-tipo{font-weight:600;color:var(--text)}
+    .opt-det{font-size:13px;color:var(--muted);margin-top:2px}
+    .opt-note{font-size:12px;color:#546E7A;font-style:italic;margin-top:2px}
+    .badge-opt{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(255,167,38,.12);color:var(--warn);text-transform:uppercase;letter-spacing:.05em;margin-left:4px}
+
     /* utils */
     .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
     .tr{color:var(--pri)} .tm{color:var(--muted)} .tsm{font-size:13px}
@@ -1135,12 +1148,48 @@ function weekObjective(w, total, exp, dist, lesion, isTaper, isRecovery, isRaceW
   return `Fase de pico: mayor carga de la preparación. ${lesion ? 'Atención a la lesión, sin sobrepasar el límite.' : 'Exige más al cuerpo con cuidado.'}`;
 }
 
+// ─── OPTIONAL DAYS ───────────────────────────────────────
+const ALL_DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+function buildOptionalDays(trainingDays, activities, lesion, estres) {
+  const restDays = ALL_DAYS.filter(d => !trainingDays.includes(d));
+  if (restDays.length === 0) return [];
+
+  const acts = activities || '';
+  const hasYoga     = acts.includes('Yoga');
+  const hasCycling  = acts.includes('Ciclismo');
+  const hasSwim     = acts.includes('Natación');
+  const hasPilates  = acts.includes('Pilates');
+  const hasWeights  = acts.includes('Pesas');
+
+  // Build activity pool based on selected activities
+  const pool = [];
+  if (hasYoga)    pool.push({ tipo:'🧘 Yoga', detalle:'30-40 min · estiramientos, movilidad de cadera y respiración', badge:'opt-yoga' });
+  if (hasCycling) pool.push({ tipo:'🚴 Bicicleta', detalle:'30-45 min · ritmo suave, trabajo aeróbico sin impacto', badge:'opt-bike' });
+  if (hasSwim)    pool.push({ tipo:'🏊 Natación', detalle:'30 min · estilo libre suave, recuperación activa', badge:'opt-swim' });
+  if (hasPilates) pool.push({ tipo:'🤸 Pilates', detalle:'30 min · core, estabilización y postura', badge:'opt-pilates' });
+  if (hasWeights) pool.push({ tipo:'💪 Fuerza complementaria', detalle:'30 min · tren superior y core, sin piernas', badge:'opt-weights' });
+  // Always include these base options
+  pool.push({ tipo:'🚶 Caminata', detalle:'20-30 min · ritmo tranquilo, al aire libre si es posible', badge:'opt-walk' });
+  pool.push({ tipo:'🌿 Stretching', detalle:'15-20 min · estiramientos globales, foam roller', badge:'opt-stretch' });
+  if (estres === 'alto') pool.push({ tipo:'🧘 Meditación + respiración', detalle:'15-20 min · pranayama, relajación consciente', badge:'opt-med' });
+
+  // Assign activities to rest days, cycling through the pool
+  return restDays.map((day, i) => ({
+    day,
+    ...pool[i % pool.length],
+    opcional: true,
+    note: lesion ? '⚠️ Ajusta la intensidad según cómo sienta la lesión ese día.' : 'Actividad opcional — hazla si tu cuerpo te lo pide.',
+  }));
+}
+
 // ─── MAIN GENERATOR ──────────────────────────────────────
 function generatePlan(d) {
   const { totalW, vols } = planWeeks(d);
   const basePace = estimatePace(d);
   const useGPS = d.relojGPS;
   const weeks = [];
+  const optionalDays = buildOptionalDays(d.dias, d.actividades, d.lesion, d.estres);
 
   for (let w = 1; w <= totalW; w++) {
     const vol = vols[w - 1];
@@ -1166,7 +1215,8 @@ function generatePlan(d) {
       sessions: sessions.map((item, i) => ({
         day: d.dias[item.day] || d.dias[i] || `Día ${i+1}`,
         ...item.s
-      }))
+      })),
+      optionalDays: isRaceWeek ? [] : optionalDays
     });
   }
 
@@ -1660,6 +1710,22 @@ function renderPlan(plan, fd) {
       <div class="abody ${i===0?'open':''}">
         <div class="week-obj">${w.objetivo}</div>
         ${sessHTML}
+        ${w.optionalDays && w.optionalDays.length > 0 ? `
+        <div class="opt-section">
+          <div class="opt-title"><i class="fa-solid fa-star"></i> Actividades opcionales — días libres</div>
+          ${w.optionalDays.map(o => `
+            <div class="opt-row">
+              <div class="opt-day">${o.day.substring(0,3)}</div>
+              <div class="opt-content">
+                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+                  <span class="opt-tipo">${o.tipo}</span>
+                  <span class="badge-opt">Opcional</span>
+                </div>
+                <div class="opt-det">${o.detalle}</div>
+                <div class="opt-note">${o.note}</div>
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
       </div>
     </div>`;
   }).join('');

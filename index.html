@@ -944,37 +944,105 @@ function parsePaceSec(str) {
   return 0;
 }
 
-function estimatePace(d) {
-  // If pace objective provided, use it as the race pace and derive training paces
+// ─── OBJETIVO ANALYSIS ────────────────────────────────────
+function getRacePaceSec(d) {
+  // Returns target RACE pace in sec/km based on objetivo
   if (d.objetivo === 'pace' && d.paceObj) {
-    const racePace = parsePaceSec(d.paceObj);
-    if (racePace > 0) return Math.round(racePace * 1.15); // easy pace = race pace + 15%
+    const p = parsePaceSec(d.paceObj);
+    if (p > 0) return p;
   }
-  // If time objective, derive pace from time + distance
   if (d.objetivo === 'tiempo' && d.tiempoObj) {
     const parts = d.tiempoObj.match(/(\d+):(\d+)(?::(\d+))?/);
     if (parts) {
       const totalSec = parts[3]
         ? (+parts[1]*3600 + +parts[2]*60 + +parts[3])
         : (+parts[1]*60 + +parts[2]);
-      const distKm = {'5K':5,'10K':10,'15K':15,'21K':21,'42K':42}[d.distMeta] || 10;
-      const racePaceSec = Math.round(totalSec / distKm);
-      if (racePaceSec > 0) return Math.round(racePaceSec * 1.15);
+      const distKm = getRaceDistKm(d.distMeta);
+      const p = Math.round(totalSec / distKm);
+      if (p > 0) return p;
     }
   }
-  // Default: estimate from experience and km/week
+  return null; // no specific pace target
+}
+
+function estimatePace(d) {
+  // 1. Try to get race pace from objetivo
+  const racePace = getRacePaceSec(d);
+  if (racePace) {
+    // Easy training pace = race pace + 15-20% slower
+    return Math.round(racePace * 1.18);
+  }
+
+  // 2. "Solo terminar" — use conservative pace based on experience
+  if (d.objetivo === 'terminar') {
+    const exp = d.experiencia;
+    const conservativePace = {
+      principiante: 540, // 9:00 min/km
+      basico:       480, // 8:00
+      intermedio:   420, // 7:00
+      avanzado:     390, // 6:30
+    }[exp] || 480;
+    const provided = parsePaceSec(d.ritmoHabitual);
+    return provided > 0 ? provided : conservativePace;
+  }
+
+  // 3. Default: estimate from experience and km/week
   const exp = d.experiencia;
   const km = d.kmSemanales;
   let baseSec;
   if (exp === 'principiante') baseSec = 480;
-  else if (exp === 'basico') baseSec = 420;
+  else if (exp === 'basico')  baseSec = 420;
   else if (exp === 'intermedio') baseSec = 360;
   else baseSec = 320;
-  if (km > 60) baseSec -= 30;
+  if (km > 60) baseSec -= 20;
   else if (km < 15) baseSec += 30;
   const provided = parsePaceSec(d.ritmoHabitual);
-  if (provided > 0) return provided;
-  return baseSec;
+  return provided > 0 ? provided : baseSec;
+}
+
+function getObjetivoModifiers(d) {
+  // Returns modifiers that affect plan structure based on objetivo
+  const racePace = getRacePaceSec(d);
+
+  if (d.objetivo === 'terminar') {
+    return {
+      volFactor: 0.80,        // 20% less volume — finish, not race
+      noIntervals: true,      // no series/fartlek
+      noProgresion: true,     // no progression runs
+      extraEasyRuns: true,    // more easy runs instead
+      label: 'Solo terminar',
+    };
+  }
+
+  if (d.objetivo === 'tiempo' && racePace) {
+    // Aggressive target (fast pace) → more volume and quality work
+    // Conservative target (slow pace) → moderate volume
+    const distKm = getRaceDistKm(d.distMeta);
+    // Compare with typical finish times
+    const typicalPace = 360; // 6:00/km reference
+    const isAggressive = racePace < typicalPace;
+    return {
+      volFactor: isAggressive ? 1.10 : 1.0, // more volume for aggressive targets
+      noIntervals: false,
+      noProgresion: false,
+      extraEasyRuns: false,
+      racePaceSec: racePace,
+      label: 'Tiempo: ' + d.tiempoObj,
+    };
+  }
+
+  if (d.objetivo === 'pace' && racePace) {
+    return {
+      volFactor: 1.05,
+      noIntervals: false,
+      noProgresion: false,
+      extraEasyRuns: false,
+      racePaceSec: racePace,
+      label: 'Pace: ' + d.paceObj,
+    };
+  }
+
+  return { volFactor: 1.0, noIntervals: false, noProgresion: false, extraEasyRuns: false };
 }
 
 // ─── VOLUME PLANNING ──────────────────────────────────────
@@ -1047,6 +1115,7 @@ function planWeeks(d) {
   totalW = Math.max(4, Math.min(totalW, 28));
 
   const raceKm = getRaceDistKm(d.distMeta);
+  const mods = getObjetivoModifiers(d);
 
   let base = d.kmSemanales;
   if (base === 0) {
@@ -1055,33 +1124,30 @@ function planWeeks(d) {
   }
   if (d.lesion) base = Math.round(base * 0.8);
 
-  const peakVol = getPeakWeeklyVolume(raceKm, d.experiencia, base, totalW);
+  const peakVol = Math.round(getPeakWeeklyVolume(raceKm, d.experiencia, base, totalW) * mods.volFactor);
 
-  // Build progressive volumes from base to peak
   const vols = [];
   for (let w = 1; w <= totalW; w++) {
     const fromEnd = totalW - w + 1;
     let vol;
     if (fromEnd === 1) {
-      vol = Math.round(base * 0.6); // race week: very low
+      vol = Math.round(base * 0.6);
     } else if (fromEnd === 2) {
-      vol = Math.round(peakVol * 0.55); // taper 2
+      vol = Math.round(peakVol * 0.55);
     } else if (fromEnd === 3) {
-      vol = Math.round(peakVol * 0.72); // taper 1
+      vol = Math.round(peakVol * 0.72);
     } else if (w % 4 === 0) {
-      // recovery week: 80% of previous
       const prev = vols[w-2] || base;
       vol = Math.round(prev * 0.80);
     } else {
-      // progressive build toward peak
-      const buildProgress = (w - 1) / (totalW - 4); // 0 to 1
+      const buildProgress = (w - 1) / (totalW - 4);
       const target = base + (peakVol - base) * Math.min(buildProgress * 1.1, 1.0);
       vol = Math.round(target);
     }
     vols.push(Math.max(base, Math.min(vol, peakVol)));
   }
 
-  return { totalW, vols, base, raceKm, peakVol };
+  return { totalW, vols, base, raceKm, peakVol, mods };
 }
 
 // ─── SESSION TEMPLATES ────────────────────────────────────
@@ -1162,7 +1228,11 @@ const SESSION_TYPES = {
 };
 
 // ─── ASSIGN SESSIONS TO DAYS ─────────────────────────────
-function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym, hasLesion, exp, raceKm, distMaxCompletada) {
+function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym, hasLesion, exp, raceKm, distMaxCompletada, mods) {
+  mods = mods || {};
+  const noIntervals = hasLesion || mods.noIntervals;
+  const noProgresion = mods.noProgresion;
+  const extraEasy = mods.extraEasyRuns;
   const n = days.length;
   const pace = (f) => paceStr(basePace, f, useGPS);
   const fromEnd = totalW - weekNum + 1;
@@ -1233,8 +1303,8 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
       return {day:i, s: SESSION_TYPES.descansoActivo()};
     });
   } else {
-    const hasSeries  = !hasLesion && (exp==='intermedio'||exp==='avanzado') && n>=3;
-    const hasFartlek = !hasLesion && exp!=='principiante' && n>=3;
+    const hasSeries  = !noIntervals && (exp==='intermedio'||exp==='avanzado') && n>=3;
+    const hasFartlek = !noIntervals && !noProgresion && exp!=='principiante' && n>=3;
     const seriesDist = raceKm >= 21 ? (exp==='avanzado' ? 1000 : 800) : (exp==='avanzado' ? 800 : 400);
     const seriesReps = raceKm >= 21 ? 6 : 4;
     let sessions = new Array(n).fill(null);
@@ -1244,8 +1314,27 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
     for (let i = 0; i < n; i++) {
       if (sessions[i]) continue;
       if (hasGym && filled===0 && !hasLesion) { sessions[i]=SESSION_TYPES.fuerza(); filled++; continue; }
-      if (hasSeries && filled<1)              { sessions[i]=SESSION_TYPES.intervalos(seriesReps, seriesDist, pace, useGPS); filled++; continue; }
-      if (hasFartlek && filled<1)             { sessions[i]=SESSION_TYPES.fartlek(intKm, pace, useGPS); filled++; continue; }
+      if (hasSeries && filled<1) {
+        // If race pace is known, train intervals at race pace
+        const intervalPace = mods.racePaceSec
+          ? (f) => {
+              const s = Math.round(mods.racePaceSec * 0.98); // slightly faster than race pace
+              const m = Math.floor(s/60), sg = s%60;
+              return useGPS ? `${m}:${sg.toString().padStart(2,'0')} min/km` : 'Esfuerzo 8-9/10';
+            }
+          : pace;
+        sessions[i]=SESSION_TYPES.intervalos(seriesReps, seriesDist, intervalPace, useGPS);
+        filled++; continue;
+      }
+      if (hasFartlek && filled<1) {
+        // Fartlek fast segments at race pace if known
+        const fartlekNote = mods.racePaceSec
+          ? `Segmentos rápidos a ${Math.floor(mods.racePaceSec/60)}:${(mods.racePaceSec%60).toString().padStart(2,'0')} min/km (ritmo objetivo de carrera)`
+          : null;
+        const s = SESSION_TYPES.fartlek(intKm, pace, useGPS);
+        if (fartlekNote) s.note = fartlekNote;
+        sessions[i]=s; filled++; continue;
+      }
       if (i===n-1)                            { sessions[i]=SESSION_TYPES.descansoActivo(); continue; }
       // Use week-offset pattern for variety — different km each week
       const varKm = easyPattern[easyCount % easyPattern.length];
@@ -1306,9 +1395,10 @@ function buildOptionalDays(trainingDays, activities, lesion, estres) {
 
 // ─── MAIN GENERATOR ──────────────────────────────────────
 function generatePlan(d) {
-  const { totalW, vols } = planWeeks(d);
+  const { totalW, vols, mods } = planWeeks(d);
   const raceKm = getRaceDistKm(d.distMeta);
   const basePace = estimatePace(d);
+  const racePace = getRacePaceSec(d);
   const useGPS = d.relojGPS;
   const weeks = [];
   const optionalDays = buildOptionalDays(d.dias, d.actividades, d.lesion, d.estres);
@@ -1322,7 +1412,7 @@ function generatePlan(d) {
 
     const sessions = assignSessions(
       d.dias, vol, w, totalW, basePace, useGPS,
-      d.gimnasio, d.lesion, d.experiencia, raceKm, d.distMax
+      d.gimnasio, d.lesion, d.experiencia, raceKm, d.distMax, mods
     );
 
     // Calculate ACTUAL km from sessions so header matches reality
@@ -1779,6 +1869,11 @@ function renderPlan(plan, fd) {
   document.getElementById('pmeta').innerHTML = `
     <div class="pmi"><i class="fa-solid fa-person-running"></i>${fd.nombre}</div>
     <div class="pmi"><i class="fa-solid fa-bullseye"></i>${fd.distMeta}</div>
+    <div class="pmi"><i class="fa-solid fa-flag-checkered"></i>${
+      fd.objetivo === 'terminar' ? 'Solo terminar' :
+      fd.objetivo === 'tiempo'   ? 'Tiempo: ' + (fd.tiempoObj||'—') :
+      fd.objetivo === 'pace'     ? 'Pace: ' + (fd.paceObj||'—') : '—'
+    }</div>
     <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${plan.totalW} semanas</div>
     <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${fd.dias.length} días/sem</div>
   `;

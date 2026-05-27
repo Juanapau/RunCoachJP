@@ -2253,11 +2253,22 @@ function renderPlan(plan, fd) {
     const fmt = d => d.getDate() + '/' + (d.getMonth()+1);
     return fmt(start) + ' – ' + fmt(end);
   }
-  function getDayDate(weekNum, dayIdx) {
-    const d = new Date(startDate);
-    d.setDate(d.getDate() + (weekNum-1)*7 + dayIdx);
-    const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-    return days[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth()+1);
+  function getDayDate(weekNum, dayName) {
+    // Map day names to JS weekday numbers (0=Sun, 1=Mon, ...)
+    const dayMap = {'Domingo':0,'Lunes':1,'Martes':2,'Miércoles':3,'Jueves':4,'Viernes':5,'Sábado':6};
+    const targetDay = dayMap[dayName];
+    if (targetDay === undefined) return '';
+    // Get Monday of that week
+    const weekStart = new Date(startDate);
+    weekStart.setDate(weekStart.getDate() + (weekNum - 1) * 7);
+    // Find the correct day within that week
+    const weekStartDay = weekStart.getDay(); // 0=Sun
+    let diff = targetDay - weekStartDay;
+    if (diff < 0) diff += 7;
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + diff);
+    const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    return dayNames[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth()+1);
   }
 
   const prog = getProgress(planId);
@@ -2299,7 +2310,7 @@ function renderPlan(plan, fd) {
       const key = getSessKey(w.num, s.day);
       const status = prog[key] || '';
       const alt = getAlternative(s.badge);
-      const dayDateStr = getDayDate(w.num, idx);
+      const dayDateStr = getDayDate(w.num, s.day);
       return `
         <div class="sr ${status}" id="sr_${key}">
           <div class="sd">${s.day.substring(0,3)}<span class="sd-date">${dayDateStr}</span></div>

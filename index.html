@@ -2259,6 +2259,9 @@ function renderPlan(plan, fd) {
     const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     return days[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth()+1);
   }
+
+  const prog = getProgress(planId);
+  const totalSessions = plan.weeks.reduce((s,w) => s+w.sessions.length, 0);
   const doneSessions = Object.values(prog).filter(v=>v==='done').length;
   const skipSessions = Object.values(prog).filter(v=>v==='skipped').length;
   const donePct = totalSessions > 0 ? Math.round((doneSessions/totalSessions)*100) : 0;

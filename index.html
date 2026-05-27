@@ -328,6 +328,34 @@
     .opt-note{font-size:12px;color:#546E7A;font-style:italic;margin-top:2px}
     .badge-opt{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(255,167,38,.12);color:var(--warn);text-transform:uppercase;letter-spacing:.05em;margin-left:4px}
 
+
+    /* countdown */
+    .countdown-wrap{background:linear-gradient(135deg,#0d1f2d,#1a2a3a);border:1px solid rgba(38,198,218,.25);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+    .countdown-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .countdown-days{font-size:32px;font-weight:800;color:var(--pri);font-family:'Bebas Neue',sans-serif;letter-spacing:.04em}
+    .countdown-sub{font-size:12px;color:var(--muted)}
+    .countdown-race{font-size:13px;color:var(--text);font-weight:600}
+
+    /* week date header */
+    .week-dates{font-size:12px;color:var(--muted);margin-top:2px;font-family:'Nunito',sans-serif;font-weight:400}
+
+    /* day date label */
+    .sd-date{font-size:10px;color:#607D8B;font-weight:400;display:block;margin-top:1px}
+
+    /* profile card */
+    .profile-card{background:var(--card);border-radius:var(--r);padding:16px;border:1px solid var(--border);margin-bottom:16px}
+    .profile-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .profile-card-title{font-size:14px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+    .profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px}
+    .profile-field{display:flex;flex-direction:column;gap:2px}
+    .profile-field-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .profile-field-value{font-weight:600;color:var(--text)}
+
+    /* confirm modal */
+    .confirm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+    .confirm-item{background:var(--bg2);border-radius:8px;padding:10px 12px}
+    .confirm-item-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+    .confirm-item-value{font-size:14px;font-weight:700;color:var(--text)}
     /* utils */
     .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
     .tr{color:var(--pri)} .tm{color:var(--muted)} .tsm{font-size:13px}
@@ -361,6 +389,7 @@
   <button class="nb act" id="nb-ini" onclick="goHome()"><i class="fa-solid fa-house"></i><span>Inicio</span></button>
   <button class="nb" id="nb-new" onclick="goApp('wizard')"><i class="fa-solid fa-circle-plus"></i><span>Nuevo Plan</span></button>
   <button class="nb" id="nb-his" onclick="goApp('history')"><i class="fa-solid fa-list"></i><span>Mis Planes</span></button>
+  <button class="nb" id="nb-pro" onclick="goApp('profile')"><i class="fa-solid fa-user"></i><span>Perfil</span></button>
 </nav>
 
 <!-- ══════════════════════════════════════
@@ -610,8 +639,41 @@
 </div>
 
 <!-- ══════════════════════════════════════
-     LOADING
+     CONFIRM MODAL
 ══════════════════════════════════════ -->
+<div class="mo" id="modal-confirm-plan">
+  <div class="mb" style="max-width:480px">
+    <div class="mt2"><i class="fa-solid fa-clipboard-check" style="color:var(--pri);margin-right:8px"></i>Confirmar plan</div>
+    <div class="mbd">Revisa los datos antes de generar tu plan de entrenamiento.</div>
+    <div class="confirm-grid" id="confirm-grid"></div>
+    <div class="mac">
+      <button class="btn bp bfull" id="confirm-gen-btn"><i class="fa-solid fa-dumbbell"></i> Generar plan</button>
+      <button class="btn bo bfull" onclick="closeConfirmModal()">Revisar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PROFILE SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="sc-profile">
+  <div class="wrap" style="padding-top:16px">
+    <h2 class="sectit"><i class="fa-solid fa-user-gear"></i> Mi Perfil</h2>
+    <div class="card mb4" style="background:rgba(38,198,218,.06);border-color:rgba(38,198,218,.2)">
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">
+        <i class="fa-solid fa-circle-info" style="color:var(--pri)"></i>
+        Tu perfil se guarda automáticamente cuando creas un plan. La próxima vez que generes uno, tus datos personales ya estarán precargados.
+      </div>
+    </div>
+    <div id="profile-content"></div>
+    <div class="mt4">
+      <button class="btn bp bfull" onclick="goApp('wizard')"><i class="fa-solid fa-circle-plus"></i> Crear nuevo plan con este perfil</button>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn bor bsm" onclick="clearProfile()"><i class="fa-solid fa-trash"></i> Borrar perfil guardado</button>
+    </div>
+  </div>
+</div>
 <div class="screen" id="sc-loading">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center">
     <div class="lic"><i class="fa-solid fa-person-running"></i></div>
@@ -676,35 +738,202 @@ let currentPlanId = null;
 //  NAVIGATION
 // ═══════════════════════════════════════════════════════════
 function goApp(id) {
-  // Hide splash overlay
   document.getElementById('sc-splash').classList.add('hidden');
-  // Show target screen
-  if (id === 'wizard') { cStep = 1; renderStep(1); }
+  if (id === 'wizard') { cStep = 1; renderStep(1); loadProfileIntoWizard(); }
   if (id === 'history') renderHistory();
+  if (id === 'profile') renderProfileScreen();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('sc-' + id).classList.add('active');
   window.scrollTo(0, 0);
-  // Update nav
-  ['ini','new','his'].forEach(k => document.getElementById('nb-'+k).classList.remove('act'));
-  const nmap = {wizard:'new', history:'his', plan:'his'};
+  ['ini','new','his','pro'].forEach(k => document.getElementById('nb-'+k) && document.getElementById('nb-'+k).classList.remove('act'));
+  const nmap = {wizard:'new', history:'his', plan:'his', profile:'pro'};
   if (nmap[id]) document.getElementById('nb-'+nmap[id]).classList.add('act');
 }
 
 function goHome() {
-  // Show splash overlay again
   document.getElementById('sc-splash').classList.remove('hidden');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  ['ini','new','his'].forEach(k => document.getElementById('nb-'+k).classList.remove('act'));
+  ['ini','new','his','pro'].forEach(k => document.getElementById('nb-'+k) && document.getElementById('nb-'+k).classList.remove('act'));
   document.getElementById('nb-ini').classList.add('act');
 }
+
+// ═══════════════════════════════════════════════════════════
+//  PROFILE MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+function saveProfile(d) {
+  const profile = {
+    nombre: d.nombre, edad: d.edad, sexo: d.sexo,
+    peso: d.peso, estatura: d.estatura,
+    fcReposo: d.fcReposo, fcMax: d.fcMax,
+    experiencia: d.experiencia, kmSemanales: d.kmSemanales,
+    ritmoHabitual: d.ritmoHabitual, distMax: d.distMax,
+    lesion: d.lesion, lesionDesc: d.lesionDesc,
+    cirugia: d.cirugia, cirugiaDesc: d.cirugiaDesc,
+    autorizacion: d.autorizacion,
+    superficie: d.superficie, topografia: d.topografia,
+    gimnasio: d.gimnasio, clima: d.clima,
+    sueno: d.sueno, estres: d.estres,
+    actividades: d.actividades, alimentacion: d.alimentacion,
+    relojGPS: d.relojGPS, monitorFC: d.monitorFC, apps: d.apps,
+  };
+  localStorage.setItem('runcoach_profile', JSON.stringify(profile));
+}
+
+function getProfile() {
+  try { return JSON.parse(localStorage.getItem('runcoach_profile') || 'null'); } catch { return null; }
+}
+
+function clearProfile() {
+  localStorage.removeItem('runcoach_profile');
+  renderProfileScreen();
+  showToast('Perfil borrado');
+}
+
+function renderProfileScreen() {
+  const p = getProfile();
+  const c = document.getElementById('profile-content');
+  if (!p) {
+    c.innerHTML = `<div class="empty"><i class="fa-solid fa-user-slash"></i><p>Aún no tienes un perfil guardado.<br>Se guarda automáticamente al crear tu primer plan.</p></div>`;
+    return;
+  }
+  c.innerHTML = `
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <div class="profile-card-title"><i class="fa-solid fa-user"></i> Datos personales</div>
+      </div>
+      <div class="profile-fields">
+        <div class="profile-field"><span class="profile-field-label">Nombre</span><span class="profile-field-value">${esc(p.nombre||'—')}</span></div>
+        <div class="profile-field"><span class="profile-field-label">Edad</span><span class="profile-field-value">${p.edad||'—'} años</span></div>
+        <div class="profile-field"><span class="profile-field-label">Peso</span><span class="profile-field-value">${p.peso||'—'} kg</span></div>
+        <div class="profile-field"><span class="profile-field-label">Estatura</span><span class="profile-field-value">${p.estatura||'—'} cm</span></div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <div class="profile-card-title"><i class="fa-solid fa-stopwatch"></i> Nivel de corredor</div>
+      </div>
+      <div class="profile-fields">
+        <div class="profile-field"><span class="profile-field-label">Experiencia</span><span class="profile-field-value">${esc(p.experiencia||'—')}</span></div>
+        <div class="profile-field"><span class="profile-field-label">Km semanales</span><span class="profile-field-value">${p.kmSemanales||'—'} km</span></div>
+        <div class="profile-field"><span class="profile-field-label">Ritmo habitual</span><span class="profile-field-value">${esc(p.ritmoHabitual||'—')}</span></div>
+        <div class="profile-field"><span class="profile-field-label">Dist. máxima</span><span class="profile-field-value">${esc(p.distMax||'—')}</span></div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <div class="profile-card-title"><i class="fa-solid fa-heart-pulse"></i> Salud y entorno</div>
+      </div>
+      <div class="profile-fields">
+        <div class="profile-field"><span class="profile-field-label">Lesiones</span><span class="profile-field-value">${p.lesion ? esc(p.lesionDesc||'Sí') : 'Ninguna'}</span></div>
+        <div class="profile-field"><span class="profile-field-label">Gimnasio</span><span class="profile-field-value">${p.gimnasio ? 'Sí' : 'No'}</span></div>
+        <div class="profile-field"><span class="profile-field-label">Clima</span><span class="profile-field-value">${esc(p.clima||'—')}</span></div>
+        <div class="profile-field"><span class="profile-field-label">Actividades</span><span class="profile-field-value">${esc(p.actividades||'Ninguna')}</span></div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <div class="profile-card-title"><i class="fa-solid fa-watch"></i> Tecnología</div>
+      </div>
+      <div class="profile-fields">
+        <div class="profile-field"><span class="profile-field-label">Reloj GPS</span><span class="profile-field-value">${p.relojGPS ? 'Sí' : 'No'}</span></div>
+        <div class="profile-field"><span class="profile-field-label">Monitor FC</span><span class="profile-field-value">${esc(p.monitorFC||'—')}</span></div>
+        <div class="profile-field"><span class="profile-field-label">Apps</span><span class="profile-field-value">${esc(p.apps||'Ninguna')}</span></div>
+      </div>
+    </div>`;
+}
+
+function loadProfileIntoWizard() {
+  const p = getProfile();
+  if (!p) return;
+  requestAnimationFrame(() => {
+    setVal('f1', p.nombre); setVal('f2', p.edad); setVal('f3', p.sexo);
+    setVal('f4', p.peso); setVal('f5', p.estatura);
+    setVal('f6', p.fcReposo||''); setVal('f7', p.fcMax||'');
+    setVal('f8', p.experiencia); setVal('f9', p.kmSemanales);
+    setVal('f10', p.ritmoHabitual||''); setVal('f11', p.distMax);
+    preSelR('rg-les', p.lesion?'si':'no'); togLes();
+    setVal('f17', p.lesionDesc||'');
+    preSelR('rg-cir', p.cirugia?'si':'no'); togCir();
+    setVal('f18', p.cirugiaDesc||'');
+    preSelR('rg-aut', p.autorizacion||'nc');
+    const supItems = (p.superficie||'').split(', ').map(s=>s.trim().toLowerCase());
+    document.querySelectorAll('#cg-sup .co').forEach(el => {
+      const txt = el.textContent.trim().replace(/[^\w\sáéíóúüñ]/gu,'').trim().toLowerCase();
+      el.classList.toggle('sel', supItems.some(s=>{const sc=s.replace(/[^\w\sáéíóúüñ]/gu,'').trim().toLowerCase();return txt.includes(sc)||sc.includes(txt);}));
+    });
+    preSelR('rg-top', p.topografia);
+    preSelR('rg-gym', p.gimnasio?'si':'no');
+    setVal('f19', p.clima||'');
+    if (p.sueno) { document.getElementById('f20').value=p.sueno; document.getElementById('sv').textContent=p.sueno+' hrs'; }
+    preSelR('rg-est', p.estres);
+    document.querySelectorAll('#cg-act .co').forEach(el=>el.classList.remove('sel'));
+    const actItems=(p.actividades||'').split(', ').map(s=>s.trim().toLowerCase()).filter(Boolean);
+    document.querySelectorAll('#cg-act .co').forEach(el=>{
+      const txt=el.textContent.trim().replace(/[^\w\sáéíóúüñ]/gu,'').trim().toLowerCase();
+      if(actItems.some(a=>{const ac=a.replace(/[^\w\sáéíóúüñ]/gu,'').trim().toLowerCase();return txt.includes(ac)||ac.includes(txt);})) el.classList.add('sel');
+    });
+    setVal('f21', p.alimentacion||'');
+    preSelR('rg-rel', p.relojGPS?'si':'no');
+    preSelR('rg-mfc', p.monitorFC);
+    document.querySelectorAll('#cg-apps .co').forEach(el=>el.classList.remove('sel'));
+    const appItems=(p.apps||'').split(', ').map(s=>s.trim().toLowerCase()).filter(Boolean);
+    document.querySelectorAll('#cg-apps .co').forEach(el=>{
+      const txt=el.textContent.trim().toLowerCase();
+      if(appItems.some(a=>txt.includes(a)||a.includes(txt))) el.classList.add('sel');
+    });
+    showToast('Perfil cargado automáticamente ✓');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONFIRM MODAL BEFORE GENERATING
+// ═══════════════════════════════════════════════════════════
+function showConfirmModal() {
+  if (!valStep(8)) return;
+  const d = collect();
+  const grid = document.getElementById('confirm-grid');
+  const item = (label, value) => `<div class="confirm-item"><div class="confirm-item-label">${label}</div><div class="confirm-item-value">${value}</div></div>`;
+  grid.innerHTML =
+    item('Corredor', d.nombre || '—') +
+    item('Distancia meta', d.distMeta || '—') +
+    item('Objetivo', d.objetivo==='terminar'?'Solo terminar':d.objetivo==='tiempo'?'Tiempo: '+(d.tiempoObj||'—'):'Pace: '+(d.paceObj||'—')) +
+    item('Experiencia', d.experiencia || '—') +
+    item('Km semanales', (d.kmSemanales||0)+' km') +
+    item('Días/semana', (d.dias||[]).length+' días') +
+    item('Semanas', (d.semanasDisp||'Auto')+' sem') +
+    item('Inicio', d.fechaInicio||'Hoy');
+  document.getElementById('modal-confirm-plan').classList.add('open');
+}
+
+function closeConfirmModal() {
+  document.getElementById('modal-confirm-plan').classList.remove('open');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('confirm-gen-btn').addEventListener('click', () => {
+    closeConfirmModal();
+    formData = collect();
+    saveProfile(formData);
+    showScreen('loading');
+    startLoadMsg();
+    const editId = window._editingPlanId || null;
+    setTimeout(() => {
+      planObj = generatePlan(formData);
+      currentPlanId = editId || 'preview';
+      stopLoadMsg();
+      renderPlan(planObj, formData);
+      showScreen('plan');
+    }, 2000);
+  });
+});
 
 function showScreen(id) {
   document.getElementById('sc-splash').classList.add('hidden');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('sc-' + id).classList.add('active');
   window.scrollTo(0, 0);
-  ['ini','new','his'].forEach(k => document.getElementById('nb-'+k).classList.remove('act'));
-  const nmap = {wizard:'new', history:'his', plan:'his'};
+  ['ini','new','his','pro'].forEach(k => document.getElementById('nb-'+k) && document.getElementById('nb-'+k).classList.remove('act'));
+  const nmap = {wizard:'new', history:'his', plan:'his', profile:'pro'};
   if (nmap[id]) document.getElementById('nb-'+nmap[id]).classList.add('act');
 }
 
@@ -926,17 +1155,7 @@ function collect() {
 // ═══════════════════════════════════════════════════════════
 function buildPlan() {
   if (!valStep(8)) return;
-  formData = collect();
-  showScreen('loading');
-  startLoadMsg();
-  const editId = window._editingPlanId || null;
-  setTimeout(() => {
-    planObj = generatePlan(formData);
-    currentPlanId = editId || 'preview';
-    stopLoadMsg();
-    renderPlan(planObj, formData);
-    showScreen('plan');
-  }, 2000);
+  showConfirmModal();
 }
 
 // ─── PACE UTILITIES ───────────────────────────────────────
@@ -2001,8 +2220,45 @@ function renderPlan(plan, fd) {
     ${fd.fechaCarrera ? `<div class="pmi"><i class="fa-solid fa-flag-checkered"></i>Carrera: ${fd.fechaCarrera}</div>` : ''}
   `;
 
-  const prog = getProgress(planId);
-  const totalSessions = plan.weeks.reduce((s,w) => s+w.sessions.length, 0);
+  // ── Countdown ─────────────────────────────────────────────
+  const startDate = fd.fechaInicio ? new Date(fd.fechaInicio) : new Date();
+  const raceDate = fd.fechaCarrera ? new Date(fd.fechaCarrera) : null;
+  const today = new Date();
+  const daysToRace = raceDate ? Math.ceil((raceDate - today) / 86400000) : null;
+
+  const countdownHTML = daysToRace !== null ? `
+    <div class="countdown-wrap">
+      <div>
+        <div class="countdown-label"><i class="fa-solid fa-flag-checkered"></i> Faltan</div>
+        <div class="countdown-days">${daysToRace > 0 ? daysToRace : '🏆'} ${daysToRace > 0 ? 'días' : 'ES HOY'}</div>
+        <div class="countdown-sub">para tu carrera</div>
+      </div>
+      <div style="text-align:right">
+        <div class="countdown-label">Fecha carrera</div>
+        <div class="countdown-race">${fd.fechaCarrera}</div>
+        ${fd.fechaInicio ? '<div class="countdown-label" style="margin-top:6px">Inicio plan</div><div class="countdown-race">' + fd.fechaInicio + '</div>' : ''}
+      </div>
+    </div>` : '';
+
+  // ── Helper: get week start date ───────────────────────────
+  function getWeekStartDate(weekNum) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + (weekNum - 1) * 7);
+    return d;
+  }
+  function getWeekDateRange(weekNum) {
+    const start = getWeekStartDate(weekNum);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const fmt = d => d.getDate() + '/' + (d.getMonth()+1);
+    return fmt(start) + ' – ' + fmt(end);
+  }
+  function getDayDate(weekNum, dayIdx) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + (weekNum-1)*7 + dayIdx);
+    const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    return days[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth()+1);
+  }
   const doneSessions = Object.values(prog).filter(v=>v==='done').length;
   const skipSessions = Object.values(prog).filter(v=>v==='skipped').length;
   const donePct = totalSessions > 0 ? Math.round((doneSessions/totalSessions)*100) : 0;
@@ -2028,7 +2284,7 @@ function renderPlan(plan, fd) {
   const basePaceSec = estimatePace(fd);
   const racePaceSec = getRacePaceSec(fd);
 
-  content.innerHTML = progHTML + plan.weeks.map((w, i) => {
+  content.innerHTML = countdownHTML + progHTML + plan.weeks.map((w, i) => {
     const tag = w.isRaceWeek ? ' 🏆' : w.isTaper ? ' ↓ Tapering' : w.isRecovery ? ' 🔄 Recuperación' : '';
 
     // Week completion indicator
@@ -2036,13 +2292,14 @@ function renderPlan(plan, fd) {
     const weekTotal = w.sessions.length;
     const weekPct = Math.round((weekDone/weekTotal)*100);
 
-    const sessHTML = w.sessions.map(s => {
+    const sessHTML = w.sessions.map((s, idx) => {
       const key = getSessKey(w.num, s.day);
       const status = prog[key] || '';
       const alt = getAlternative(s.badge);
+      const dayDateStr = getDayDate(w.num, idx);
       return `
         <div class="sr ${status}" id="sr_${key}">
-          <div class="sd">${s.day.substring(0,3)}</div>
+          <div class="sd">${s.day.substring(0,3)}<span class="sd-date">${dayDateStr}</span></div>
           <div class="scontent">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span class="stype">${s.tipo}</span>
@@ -2091,8 +2348,10 @@ function renderPlan(plan, fd) {
     return '<div class="ai">' +
       '<div class="ah ' + (i===0?'open':'') + '" onclick="togAcc(this)">' +
         '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">' +
-          '<span><span class="tr">Semana ' + w.num + '</span>' + tag + '</span>' +
-          '<span style="font-size:12px;color:var(--muted);font-family:\'Nunito\',sans-serif;font-weight:600">' + w.vol + ' km</span>' +
+          '<div>' +
+            '<span><span class="tr">Semana ' + w.num + '</span>' + tag + '</span>' +
+            '<div class="week-dates">' + getWeekDateRange(w.num) + ' · ' + w.vol + ' km</div>' +
+          '</div>' +
           weekCounterHTML(w.num, weekDone, weekTotal) +
         '</div>' +
         '<i class="fa-solid fa-chevron-down chv"></i>' +
@@ -2157,6 +2416,7 @@ function savePlan() {
   }
 
   setPlanes(planes);
+  if (formData) saveProfile(formData);
   currentPlanId = id;
 
   const btn = document.getElementById('bsave');

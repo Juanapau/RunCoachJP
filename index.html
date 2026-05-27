@@ -1286,13 +1286,16 @@ const SESSION_TYPES = {
     nutricion: 'Reduce ligeramente los carbohidratos al no haber gasto energético. Enfócate en proteína y vegetales para la recuperación muscular.',
     hidratacion: 'Aunque no corras, bebe al menos 2L de agua al día. Ayuda a eliminar toxinas y reparar tejidos.'
   }),
-  carrera: (dist) => ({
-    tipo: '🏆 DÍA DE CARRERA', badge: 'bl',
-    detail: `${dist} · ¡Disfruta el proceso!`,
-    note: 'Desayuna 2-3 hrs antes. Calienta 10 min. Confía en tu entrenamiento.',
-    nutricion: 'Noche anterior: pasta o arroz. Mañana: desayuno familiar 2-3h antes (lo que ya conoces y toleras bien). Nada nuevo el día de carrera. Lleva geles si la distancia supera los 16K.',
-    hidratacion: 'Al despertar: 500ml. Antes de la salida: 250ml. Durante: bebe en cada puesto de avituallamiento aunque no tengas sed. Después: repón agresivamente con agua e isotónica.'
-  }),
+  carrera: (dist) => {
+    const raceKm = getRaceDistKm(dist);
+    return {
+      tipo: '🏆 DÍA DE CARRERA', badge: 'bl',
+      detail: `${raceKm} km · ¡Disfruta el proceso!`,
+      note: 'Desayuna 2-3 hrs antes. Calienta 10 min. Confía en tu entrenamiento.',
+      nutricion: 'Noche anterior: pasta o arroz. Mañana: desayuno familiar 2-3h antes (lo que ya conoces y toleras bien). Nada nuevo el día de carrera. Lleva geles si la distancia supera los 16K.',
+      hidratacion: 'Al despertar: 500ml. Antes de la salida: 250ml. Durante: bebe en cada puesto de avituallamiento aunque no tengas sed. Después: repón agresivamente con agua e isotónica.'
+    };
+  },
 };
 
 // ─── ASSIGN SESSIONS TO DAYS ─────────────────────────────
@@ -1588,7 +1591,17 @@ function formatGarmin(s, p, bps, useGPS) {
   }
 
   if (s.badge === 'bl') {
-    // Long run: all at easy/conversational pace, slightly slower than easy
+    // Special case: race day
+    if (s.tipo && s.tipo.includes('CARRERA')) {
+      const warmKm = Math.max(1, Math.round(km * 0.05));
+      const mainKm = Math.max(1, km - warmKm);
+      const racePaceSec = bps; // on race day, bps is already the easy pace; use it as reference
+      const estTotal = fmtTime(Math.round(km * bps));
+      steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.10) : null, paceRange: useGPS ? fmtPaceRange(bps,1.08,1.12) : null, estTime: fmtTime(warmKm*Math.round(bps*1.10)) });
+      steps.push({ color:'blue',  name:'🏆 Carrera',    dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.0)  : null, paceRange: useGPS ? fmtPaceRange(bps,0.98,1.02)  : null, estTime: fmtTime(mainKm*Math.round(bps)) });
+      return { type:'garmin', name:'🏆 DÍA DE CARRERA', totalDist:`${km} km`, estTime: estTotal, steps };
+    }
+    // Long run
     const warmKm = Math.max(2, Math.round(km * 0.1));
     const coolKm = Math.max(1, Math.round(km * 0.05));
     const mainKm = Math.max(1, km - warmKm - coolKm);

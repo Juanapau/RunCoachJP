@@ -443,10 +443,15 @@
         <input type="text" class="fc" id="f14b" placeholder="Ej: 5:30 min/km">
         <div class="fhint">El ritmo promedio que quieres mantener en la carrera</div>
       </div>
+      <div class="fg">
+        <label class="fl">Fecha de inicio del plan</label>
+        <input type="date" class="fc" id="f15a" onchange="calcSem()">
+        <div class="fhint">Opcional — si no la indicas, el plan inicia hoy</div>
+      </div>
       <div class="fg"><label class="fl">Fecha de la carrera</label><input type="date" class="fc" id="f15" onchange="calcSem()"></div>
       <div id="sem-info" style="display:none" class="card cacc mt4">
         <div style="font-size:14px;color:var(--muted)">Tiempo disponible</div>
-        <div id="sem-txt" style="font-size:24px;font-weight:800;color:var(--red)"></div>
+        <div id="sem-txt" style="font-size:24px;font-weight:800;color:var(--pri)"></div>
       </div>
     </div>
 
@@ -828,18 +833,27 @@ function toggleTiempo() { toggleObjExtra(); } // backward compat
 function togLes() { document.getElementById('les-det').style.display = gR('rg-les') === 'si' ? 'block' : 'none'; }
 function togCir() { document.getElementById('cir-det').style.display = gR('rg-cir') === 'si' ? 'block' : 'none'; }
 function calcSem() {
-  const v = document.getElementById('f15').value;
-  if (!v) return;
-  const ms = new Date(v) - new Date();
+  const raceDate = document.getElementById('f15').value;
+  const startDate = document.getElementById('f15a').value;
+  if (!raceDate) return;
+  const start = startDate ? new Date(startDate) : new Date();
+  const ms = new Date(raceDate) - start;
   const s = Math.round(ms / (7 * 86400000));
   const el = document.getElementById('sem-info');
-  if (s > 0) { el.style.display = 'block'; document.getElementById('sem-txt').textContent = `${s} semanas de preparación`; }
-  else el.style.display = 'none';
+  if (s > 0) {
+    el.style.display = 'block';
+    document.getElementById('sem-txt').textContent = `${s} semanas de preparación`;
+  } else {
+    el.style.display = 'none';
+  }
 }
 function getSemanas() {
-  const v = document.getElementById('f15').value;
-  if (v) { const s = Math.round((new Date(v) - new Date()) / (7 * 86400000)); if (s > 0) return s; }
-  return null;
+  const raceDate = document.getElementById('f15').value;
+  const startDate = document.getElementById('f15a').value;
+  if (!raceDate) return null;
+  const start = startDate ? new Date(startDate) : new Date();
+  const s = Math.round((new Date(raceDate) - start) / (7 * 86400000));
+  return s > 0 ? s : null;
 }
 function updRes() {
   const dm = document.getElementById('f13').value;
@@ -881,6 +895,7 @@ function collect() {
     tiempoObj: document.getElementById('f14').value,
     paceObj: document.getElementById('f14b').value,
     fechaCarrera: document.getElementById('f15').value,
+    fechaInicio: document.getElementById('f15a').value || '',
     semanasDisp: getSemanas(),
     dias: getDays(),
     durMax: getDuracion(),
@@ -1982,6 +1997,8 @@ function renderPlan(plan, fd) {
     }</div>
     <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${plan.totalW} semanas</div>
     <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${fd.dias.length} días/sem</div>
+    ${fd.fechaInicio ? `<div class="pmi"><i class="fa-solid fa-play"></i>Inicio: ${fd.fechaInicio}</div>` : ''}
+    ${fd.fechaCarrera ? `<div class="pmi"><i class="fa-solid fa-flag-checkered"></i>Carrera: ${fd.fechaCarrera}</div>` : ''}
   `;
 
   const prog = getProgress(planId);
@@ -2193,8 +2210,9 @@ function editPlan(id) {
     preSelR('rg-obj', d.objetivo); toggleObjExtra();
     setVal('f14', d.tiempoObj || '');
     setVal('f14b', d.paceObj || '');
+    setVal('f15a', d.fechaInicio || '');
     setVal('f15', d.fechaCarrera || '');
-    if (d.fechaCarrera) calcSem();
+    if (d.fechaCarrera || d.fechaInicio) calcSem();
 
     // ── Step 4 ──
     document.querySelectorAll('#dts .dt').forEach(btn => {

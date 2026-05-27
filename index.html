@@ -1153,16 +1153,85 @@ function planWeeks(d) {
 // ─── SESSION TEMPLATES ────────────────────────────────────
 // avgPace helper: weighted average of warm+main+cool segments
 function avgPaceStr(km, warmF, mainF, coolF, warmRatio, coolRatio, pace, useGPS) {
-  if (!useGPS) return pace(mainF); // for non-GPS just show main effort
+  if (!useGPS) return pace(mainF);
   const mainRatio = 1 - warmRatio - coolRatio;
   const avgF = warmF * warmRatio + mainF * mainRatio + coolF * coolRatio;
   return pace(avgF);
 }
 
+// ─── TRAINING SESSION LIBRARY ─────────────────────────────
+function getIntervalSession(weekNum, raceKm, exp, pace, useGPS, racePaceSec, basePaceSec) {
+  const idx = (weekNum - 1) % 6;
+  const rp = (off) => {
+    if (!useGPS) return 'Esfuerzo 8-9/10';
+    const s = racePaceSec ? racePaceSec + off : Math.round(basePaceSec * 0.85);
+    return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')} min/km`;
+  };
+  const rpR = (lo, hi) => {
+    if (!useGPS || !racePaceSec) return '';
+    const sLo = racePaceSec+lo, sHi = racePaceSec+hi;
+    return ` (${Math.floor(sLo/60)}:${(sLo%60).toString().padStart(2,'0')} - ${Math.floor(sHi/60)}:${(sHi%60).toString().padStart(2,'0')} min/km)`;
+  };
+  let sessions;
+  if (raceKm <= 10) {
+    sessions = [
+      { tipo:'Series 200m',  detail:`8×200m · ${rp(-10)}${rpR(-20,0)}`,           note:`Calentar 10 min · 8×200m con 90s recuperación · Enfriar 10 min` },
+      { tipo:'Series 400m',  detail:`6×400m · ${rp(0)}${rpR(-10,10)}`,            note:`Calentar 10 min · 6×400m con 2 min recuperación · Enfriar 10 min` },
+      { tipo:'Series 800m',  detail:`4×800m · ${rp(5)}${rpR(0,15)}`,              note:`Calentar 10 min · 4×800m con 2:30 recuperación · Enfriar 10 min` },
+      { tipo:'Pirámide',     detail:`200-400-600-400-200m · ${rp(0)}`,            note:`Calentar 10 min · 200m, 400m, 600m, 400m, 200m con 90s entre cada uno · Enfriar 10 min` },
+      { tipo:'Series 200m',  detail:`10×200m · ${rp(-15)}${rpR(-25,-5)}`,         note:`Calentar 10 min · 10×200m con 60s recuperación. Foco en técnica.` },
+      { tipo:'Series 600m',  detail:`5×600m · ${rp(5)}${rpR(-5,15)}`,             note:`Calentar 10 min · 5×600m con 2:30 recuperación · Enfriar 10 min` },
+    ];
+  } else {
+    const r = raceKm >= 42 ? 6 : 5;
+    sessions = [
+      { tipo:'Series 1000m',   detail:`${r}×1000m · ${rp(5)}${rpR(-5,15)}`,      note:`Calentar 15 min · ${r}×1000m con 2:30 trote recuperación · Enfriar 10 min` },
+      { tipo:'Series 800m',    detail:`${r+1}×800m · ${rp(0)}${rpR(-10,10)}`,    note:`Calentar 15 min · ${r+1}×800m con 2 min recuperación · Enfriar 10 min` },
+      { tipo:'Tempo continuo', detail:`${raceKm>=42?8:6} km · ${rp(10)}${rpR(0,20)}`, note:`Calentar 10 min · ${raceKm>=42?8:6} km a ritmo umbral (incómodo pero sostenible) · Enfriar 10 min` },
+      { tipo:'Series 1200m',   detail:`4×1200m · ${rp(8)}${rpR(0,18)}`,          note:`Calentar 15 min · 4×1200m con 3 min recuperación · Enfriar 10 min` },
+      { tipo:'Series 400m',    detail:`8×400m · ${rp(-5)}${rpR(-15,5)}`,         note:`Calentar 15 min · 8×400m con 90s recuperación. Más rápido que ritmo de carrera · Enfriar 10 min` },
+      { tipo:'Tempo + series', detail:`4 km tempo + 4×400m · ${rp(0)}`,          note:`Calentar 10 min · 4 km umbral (${rp(10)}) · recuperar 3 min · 4×400m rápidos · Enfriar 10 min` },
+    ];
+  }
+  const s = sessions[idx];
+  return { tipo:s.tipo, badge:'bi', detail:s.detail, note:s.note,
+    nutricion:'Carbohidratos 2-3h antes: arroz, pasta, pan. Un plátano 30 min antes funciona bien.',
+    hidratacion:'600ml en las 2h anteriores. Pequeños sorbos durante recuperaciones. 500ml con electrolitos al terminar.' };
+}
+
+function getFartlekSession(weekNum, pace, useGPS, racePaceSec, basePaceSec) {
+  const idx = (weekNum - 1) % 4;
+  const fast = racePaceSec && useGPS ? `${Math.floor(racePaceSec/60)}:${(racePaceSec%60).toString().padStart(2,'0')} min/km` : (useGPS ? pace(0.85) : 'Esfuerzo 8/10');
+  const slow = useGPS ? pace(1.08) : 'Esfuerzo 5/10';
+  const sessions = [
+    { detail:'8 km · Fartlek libre',         note:`Calentar 10 min · 2 min rápido (${fast}) / 3 min suave (${slow}) · Repetir 6-8 veces · Enfriar 10 min` },
+    { detail:'6 km · Fartlek por referencia',note:`Calentar 10 min · Acelera en subidas o tramos marcados · Recupera en bajadas · Instintivo y variado` },
+    { detail:'8 km · Fartlek progresivo',    note:`Calentar 10 min · 30 min suave · 15 min: 1 min rápido (${fast}) / 2 min suave · Último km fuerte` },
+    { detail:'6 km · Fartlek en escalera',   note:`Calentar 10 min · 1 min rápido / 1 suave · 2 min rápido / 2 suave · 3 min rápido / 3 suave · Repetir hacia abajo` },
+  ];
+  const s = sessions[idx];
+  return { tipo:'Fartlek', badge:'bi', detail:s.detail, note:s.note,
+    nutricion:'Carbohidratos 2h antes. Plátano o dátiles son excelentes.',
+    hidratacion:'Hidratación normal previa. Si dura más de 45 min lleva agua.' };
+}
+
+function getProgresionSession(weekNum, pace, useGPS, racePaceSec, basePaceSec) {
+  const idx = (weekNum - 1) % 3;
+  const rp = racePaceSec && useGPS ? `${Math.floor(racePaceSec/60)}:${(racePaceSec%60).toString().padStart(2,'0')} min/km` : (useGPS ? pace(0.88) : 'Esfuerzo 8/10');
+  const sessions = [
+    { detail:`8 km · inicio ${pace(1.08)} → final ${rp}`, note:`Primeros 4 km suaves (${pace(1.08)}), últimos 4 km a ritmo objetivo (${rp})` },
+    { detail:`10 km · 3 bloques crecientes`,              note:`Primeros 4 km muy suaves · 3 km moderado (${pace(1.0)}) · últimos 3 km a ritmo objetivo (${rp})` },
+    { detail:`6 km · inicio ${pace(1.10)} → final ${rp}`, note:`2 km suave · 2 km moderado · 2 km a ritmo objetivo (${rp})` },
+  ];
+  const s = sessions[idx];
+  return { tipo:'Rodaje de progresión', badge:'bi', detail:s.detail, note:s.note,
+    nutricion:'Comida principal 2-3h antes. Glucógeno disponible para la parte final intensa.',
+    hidratacion:'500ml antes. Si dura más de 50 min lleva agua. Rehidrata bien después.' };
+}
+
 const SESSION_TYPES = {
   suave: (km, pace, useGPS) => ({
     tipo: 'Rodaje suave', badge: 'bs',
-    // warm=10% at 1.12, main=80% at 1.0, cool=10% at 1.12 → avg ≈ 1.024
     detail: `${km} km · ${avgPaceStr(km, 1.12, 1.0, 1.12, 0.1, 0.1, pace, useGPS)}`,
     note: 'Ritmo conversacional, puedes hablar con alguien',
     nutricion: 'Desayuno ligero 1-2h antes: avena o tostada con fruta. Evita alimentos grasos.',
@@ -1170,32 +1239,31 @@ const SESSION_TYPES = {
   }),
   largo: (km, pace, useGPS) => ({
     tipo: 'Tirada larga', badge: 'bl',
-    // warm=10% at 1.15, main=85% at 1.08, cool=5% at 1.15 → avg ≈ 1.094
     detail: `${km} km · ${avgPaceStr(km, 1.15, 1.08, 1.15, 0.1, 0.05, pace, useGPS)}`,
     note: 'El ritmo más suave de la semana. Llevar agua.',
-    nutricion: `Noche anterior: cena rica en carbohidratos (pasta, arroz, papa). Mañana de la tirada: desayuno 2h antes, incluye plátano y avena. ${km>15?'Lleva geles o dátiles para consumir cada 45 min.':''}`,
-    hidratacion: `Bebe 500ml al despertar. Durante: cada 15-20 min, 150-200ml. ${km>15?'Considera bebida isotónica si dura más de 1h 30min.':''} Después: repón con 750ml-1L en las siguientes 2h.`
+    nutricion: `Noche anterior: cena rica en carbohidratos. Mañana: desayuno 2h antes con plátano y avena. ${km>15?'Lleva geles o dátiles cada 45 min.':''}`,
+    hidratacion: `Bebe 500ml al despertar. Durante: cada 15-20 min, 150-200ml. ${km>15?'Considera isotónica si dura más de 1h 30min.':''} Después: 750ml-1L en 2h.`
   }),
   intervalos: (reps, dist, pace, useGPS) => ({
     tipo: 'Series / Intervalos', badge: 'bi',
     detail: `${reps}×${dist}m · ${pace(0.85)} + Recuperación suave`,
     note: `Calentar 10 min · ${reps} repeticiones de ${dist}m · Enfriar 10 min`,
-    nutricion: 'Consume carbohidratos 2-3h antes: arroz, pasta, pan. Evita proteínas pesadas. Un plátano 30 min antes funciona bien.',
-    hidratacion: 'Hidratación previa fundamental: 600ml en las 2h anteriores. Durante el calentamiento y recuperaciones: pequeños sorbos. Después: 500ml con electrolitos.'
+    nutricion: 'Consume carbohidratos 2-3h antes. Un plátano 30 min antes funciona bien.',
+    hidratacion: '600ml en las 2h anteriores. Pequeños sorbos en recuperaciones. 500ml con electrolitos al terminar.'
   }),
   progresion: (km, pace, useGPS) => ({
     tipo: 'Rodaje de progresión', badge: 'bi',
     detail: `${km} km · inicio ${pace(1.08)} → final ${pace(0.88)}`,
     note: 'Empezar suave y terminar al límite del umbral aeróbico',
-    nutricion: 'Comida principal 2-3h antes. El cuerpo necesita glucógeno disponible para la parte final intensa. Evita entrenar en ayunas.',
-    hidratacion: '500ml antes. Si dura más de 50 min lleva agua. Rehidrata bien después con agua o bebida deportiva.'
+    nutricion: 'Comida principal 2-3h antes. Glucógeno disponible para la parte final.',
+    hidratacion: '500ml antes. Si dura más de 50 min lleva agua.'
   }),
   fartlek: (km, pace, useGPS) => ({
     tipo: 'Fartlek', badge: 'bi',
     detail: `${km} km · alternando ritmos`,
     note: `Ejemplo: 1 min rápido (${pace(0.85)}) / 2 min suave. Repetir.`,
-    nutricion: 'Similar a intervalos: carbohidratos 2h antes. Un plátano o dátiles son una excelente opción rápida.',
-    hidratacion: 'Hidratación normal previa. Si el fartlek dura más de 45 min, lleva agua o deja una botella en el punto de inicio.'
+    nutricion: 'Carbohidratos 2h antes. Plátano o dátiles son una excelente opción.',
+    hidratacion: 'Hidratación normal previa. Si dura más de 45 min lleva agua.'
   }),
   fuerza: () => ({
     tipo: 'Fuerza para corredores', badge: 'bf',
@@ -1315,25 +1383,12 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
       if (sessions[i]) continue;
       if (hasGym && filled===0 && !hasLesion) { sessions[i]=SESSION_TYPES.fuerza(); filled++; continue; }
       if (hasSeries && filled<1) {
-        // If race pace is known, train intervals at race pace
-        const intervalPace = mods.racePaceSec
-          ? (f) => {
-              const s = Math.round(mods.racePaceSec * 0.98); // slightly faster than race pace
-              const m = Math.floor(s/60), sg = s%60;
-              return useGPS ? `${m}:${sg.toString().padStart(2,'0')} min/km` : 'Esfuerzo 8-9/10';
-            }
-          : pace;
-        sessions[i]=SESSION_TYPES.intervalos(seriesReps, seriesDist, intervalPace, useGPS);
+        sessions[i] = getIntervalSession(weekNum, raceKm, exp, pace, useGPS, mods.racePaceSec || null, basePace);
         filled++; continue;
       }
       if (hasFartlek && filled<1) {
-        // Fartlek fast segments at race pace if known
-        const fartlekNote = mods.racePaceSec
-          ? `Segmentos rápidos a ${Math.floor(mods.racePaceSec/60)}:${(mods.racePaceSec%60).toString().padStart(2,'0')} min/km (ritmo objetivo de carrera)`
-          : null;
-        const s = SESSION_TYPES.fartlek(intKm, pace, useGPS);
-        if (fartlekNote) s.note = fartlekNote;
-        sessions[i]=s; filled++; continue;
+        sessions[i] = getFartlekSession(weekNum, pace, useGPS, mods.racePaceSec || null, basePace);
+        filled++; continue;
       }
       if (i===n-1)                            { sessions[i]=SESSION_TYPES.descansoActivo(); continue; }
       // Use week-offset pattern for variety — different km each week

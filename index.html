@@ -1470,8 +1470,11 @@ function generatePlan(d) {
     const isRecovery = w % 4 === 0 && !isTaper;
     const isRaceWeek = fromEnd === 1;
 
+    // Progressive pace: starts at basePace, approaches racePace by race week
+    const weekPace = getWeeklyPace(w, totalW, basePace, racePace, isTaper, isRaceWeek, isRecovery);
+
     const sessions = assignSessions(
-      d.dias, vol, w, totalW, basePace, useGPS,
+      d.dias, vol, w, totalW, weekPace, useGPS,
       d.gimnasio, d.lesion, d.experiencia, raceKm, d.distMax, mods
     );
 
@@ -1503,7 +1506,39 @@ function generatePlan(d) {
   return { weeks, tips, totalW, d };
 }
 
-// ─── TIPS GENERATOR ──────────────────────────────────────
+function getWeeklyPace(weekNum, totalW, basePace, racePace, isTaper, isRaceWeek, isRecovery) {
+  // If no race pace target, pace stays constant
+  if (!racePace) return basePace;
+
+  // basePace = easy pace (racePace * 1.18)
+  // Target: race week → racePace, taper → close to racePace, build → progress from basePace to near racePace
+
+  if (isRaceWeek) return racePace; // race day: exact target pace
+
+  const buildWeeks = totalW - 4;
+  const buildRatio = Math.min((weekNum - 1) / Math.max(buildWeeks, 1), 1.0);
+
+  if (isTaper) {
+    // Taper: close to race pace, slightly easier
+    const fromEnd = totalW - weekNum + 1;
+    const taperFactor = fromEnd === 2 ? 0.06 : 0.10; // 6-10% above race pace
+    return Math.round(racePace * (1 + taperFactor));
+  }
+
+  if (isRecovery) {
+    // Recovery weeks: slightly slower than the current progression
+    const progressedPace = Math.round(basePace - (basePace - racePace) * buildRatio * 0.85);
+    return Math.round(progressedPace * 1.05); // 5% slower than progression
+  }
+
+  // Progressive build: starts at basePace, converges toward racePace * 1.08 at peak
+  // (never quite reaches race pace in training — that's race day only)
+  const minEasyFactor = 1.08; // closest to race pace during easy runs = 8% above
+  const startFactor = basePace / racePace; // e.g. 1.18
+  const endFactor = minEasyFactor;
+  const currentFactor = startFactor - (startFactor - endFactor) * buildRatio;
+  return Math.round(racePace * currentFactor);
+}
 function buildTips(d) {
   const tips = [];
   tips.push(`Nunca aumentes el volumen semanal más de un 10%. La progresión gradual es la clave para evitar lesiones.`);
@@ -1973,6 +2008,7 @@ function renderPlan(plan, fd) {
 
   const appType = detectApp(fd.apps);
   const basePaceSec = estimatePace(fd);
+  const racePaceSec = getRacePaceSec(fd);
 
   content.innerHTML = progHTML + plan.weeks.map((w, i) => {
     const tag = w.isRaceWeek ? ' 🏆' : w.isTaper ? ' ↓ Tapering' : w.isRecovery ? ' 🔄 Recuperación' : '';
@@ -2024,7 +2060,10 @@ function renderPlan(plan, fd) {
               </div>
             </div>
             ${appType !== 'generic' ? (() => {
-              const fmt = formatSession(s, appType, null, basePaceSec, fd.relojGPS);
+              // Extract actual pace from session detail for accurate Garmin format
+              const paceMatch = s.detail.match(/(\d+):(\d+)\s*min\/km/);
+              const sessionPaceSec = paceMatch ? +paceMatch[1]*60 + +paceMatch[2] : basePaceSec;
+              const fmt = formatSession(s, appType, null, sessionPaceSec, fd.relojGPS);
               return fmt ? `<div style="margin-top:2px">${renderAppFormat(fmt, appType)}</div>` : '';
             })() : ''}
           </div>

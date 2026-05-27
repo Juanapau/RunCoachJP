@@ -1288,11 +1288,12 @@ const SESSION_TYPES = {
     nutricion: 'Reduce ligeramente los carbohidratos al no haber gasto energético. Enfócate en proteína y vegetales para la recuperación muscular.',
     hidratacion: 'Aunque no corras, bebe al menos 2L de agua al día. Ayuda a eliminar toxinas y reparar tejidos.'
   }),
-  carrera: (dist) => {
+  carrera: (dist, pace, useGPS) => {
     const raceKm = getRaceDistKm(dist);
+    const paceStr = pace ? pace(1.0) : '';
     return {
       tipo: '🏆 DÍA DE CARRERA', badge: 'bl',
-      detail: `${raceKm} km · ¡Disfruta el proceso!`,
+      detail: `${raceKm} km${paceStr ? ' · ' + paceStr : ''} · ¡Disfruta el proceso!`,
       note: 'Desayuna 2-3 hrs antes. Calienta 10 min. Confía en tu entrenamiento.',
       nutricion: 'Noche anterior: pasta o arroz. Mañana: desayuno familiar 2-3h antes (lo que ya conoces y toleras bien). Nada nuevo el día de carrera. Lleva geles si la distancia supera los 16K.',
       hidratacion: 'Al despertar: 500ml. Antes de la salida: 250ml. Durante: bebe en cada puesto de avituallamiento aunque no tengas sed. Después: repón agresivamente con agua e isotónica.'
@@ -1365,7 +1366,7 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
 
   if (isRaceWeek) {
     pool = days.map((d, i) => {
-      if (i === longIdx) return {day:i, s: SESSION_TYPES.carrera(formData.distMeta)};
+      if (i === longIdx) return {day:i, s: SESSION_TYPES.carrera(formData.distMeta, pace, useGPS)};
       if (i === longIdx - 1 || i === longIdx - 2) return {day:i, s: SESSION_TYPES.descanso()};
       return {day:i, s: SESSION_TYPES.suave(Math.max(4, Math.round(easyBase*0.7)), pace, useGPS)};
     });

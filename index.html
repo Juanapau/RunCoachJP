@@ -714,7 +714,7 @@
     </div>
     <div id="profile-content"></div>
     <div class="mt4">
-      <button class="btn bp bfull" onclick="goApp('wizard')"><i class="fa-solid fa-circle-plus"></i> Crear nuevo plan con este perfil</button>
+      <button class="btn bp bfull" onclick="goApp('wizard-from-profile')"><i class="fa-solid fa-circle-plus"></i> Crear nuevo plan con este perfil</button>
     </div>
     <div style="text-align:center;margin-top:12px">
       <button class="btn bor bsm" onclick="clearProfile()"><i class="fa-solid fa-trash"></i> Borrar perfil guardado</button>
@@ -839,10 +839,14 @@ function goApp(id) {
   if (id === 'wizard') {
     window._editingPlanId = null;
     cStep = 1; renderStep(1);
-    // First load profile (personal data), then clear plan-specific fields
-    // so profile data never fills plan fields
+    clearPlanFields();
+  }
+  if (id === 'wizard-from-profile') {
+    window._editingPlanId = null;
+    cStep = 1; renderStep(1);
+    clearPlanFields();
     loadProfileIntoWizard();
-    setTimeout(() => clearPlanFields(), 50); // slight delay ensures profile loaded first
+    id = 'wizard'; // use wizard screen
   }
   if (id === 'history') renderHistory();
   if (id === 'profile') renderProfileScreen();

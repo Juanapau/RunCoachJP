@@ -1,7 +1,6 @@
-// RunCoach SW v2.0 — index.html NUNCA se cachea
-const CACHE_NAME = 'runcoach-v2.0';
+// RunCoach SW v2.1
+const CACHE_NAME = 'runcoach-v2.1';
 
-// Solo se cachean recursos estáticos que no cambian
 const STATIC_CACHE = [
   '/RunCoachJP/icon-192.png',
   '/RunCoachJP/icon-512.png',
@@ -9,7 +8,7 @@ const STATIC_CACHE = [
 ];
 
 self.addEventListener('install', e => {
-  console.log('📦 RunCoach SW v2.0');
+  console.log('📦 RunCoach SW v2.1');
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then(c => c.addAll(STATIC_CACHE))
@@ -26,10 +25,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-
   const url = new URL(e.request.url);
-
-  // index.html SIEMPRE desde la red, nunca desde caché
   if (url.pathname.endsWith('/') || url.pathname.endsWith('index.html')) {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' })
@@ -37,8 +33,6 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-
-  // Recursos estáticos: caché primero
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;

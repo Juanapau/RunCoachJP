@@ -356,6 +356,25 @@
     .confirm-item{background:var(--bg2);border-radius:8px;padding:10px 12px}
     .confirm-item-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
     .confirm-item-value{font-size:14px;font-weight:700;color:var(--text)}
+    /* progress summary */
+    .psumm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+    .psumm-card{background:var(--bg2);border-radius:10px;padding:14px;text-align:center}
+    .psumm-val{font-size:28px;font-weight:800;color:var(--pri);display:block;font-family:'Bebas Neue',sans-serif}
+    .psumm-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+    .psumm-bar{height:10px;background:var(--border);border-radius:5px;overflow:hidden;margin:10px 0}
+    .psumm-bar-fill{height:100%;border-radius:5px;transition:width .6s ease}
+    .psumm-mot{background:linear-gradient(135deg,rgba(38,198,218,.1),rgba(147,112,219,.1));border:1px solid rgba(38,198,218,.2);border-radius:10px;padding:14px;margin-top:12px;font-size:14px;line-height:1.6;color:var(--text);text-align:center}
+    .psumm-week{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .psumm-week:last-child{border-bottom:none}
+
+    /* time history */
+    .th-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border-radius:8px;margin-bottom:6px;border:1px solid var(--border)}
+    .th-dist{font-weight:800;color:var(--pri);font-size:15px;min-width:40px}
+    .th-time{font-size:18px;font-weight:700;color:var(--text)}
+    .th-pace{font-size:12px;color:var(--muted)}
+    .th-date{font-size:11px;color:#607D8B}
+    .th-del{background:none;border:none;color:#ef5350;font-size:14px;cursor:pointer;padding:4px 8px}
+
     /* utils */
     .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
     .tr{color:var(--pri)} .tm{color:var(--muted)} .tsm{font-size:13px}
@@ -672,6 +691,35 @@
     <div style="text-align:center;margin-top:12px">
       <button class="btn bor bsm" onclick="clearProfile()"><i class="fa-solid fa-trash"></i> Borrar perfil guardado</button>
     </div>
+
+    <!-- TIME HISTORY -->
+    <div style="margin-top:24px">
+      <h3 style="font-size:16px;font-weight:700;color:var(--pri);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-clock-rotate-left"></i> Historial de tiempos
+      </h3>
+      <div class="card mb4" style="background:rgba(38,198,218,.06);border-color:rgba(38,198,218,.2)">
+        <div style="font-size:13px;color:var(--muted)">Registra tus mejores tiempos. La app los usará para calcular ritmos más precisos.</div>
+      </div>
+      <div id="time-history-list"></div>
+      <div style="margin-top:12px;background:var(--card);border-radius:var(--r);padding:14px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Añadir tiempo</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select class="fc" id="th-dist" style="flex:1;min-width:100px">
+            <option value="">Distancia</option>
+            <option value="5K">5K</option>
+            <option value="10K">10K</option>
+            <option value="15K">15K</option>
+            <option value="21K">21K (Media)</option>
+            <option value="42K">42K (Maratón)</option>
+          </select>
+          <input type="text" class="fc" id="th-time" placeholder="hh:mm:ss" style="flex:1;min-width:100px">
+          <input type="date" class="fc" id="th-date" style="flex:1;min-width:120px">
+        </div>
+        <button class="btn bp bfull" style="margin-top:10px" onclick="addTimeRecord()">
+          <i class="fa-solid fa-plus"></i> Agregar
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 <div class="screen" id="sc-loading">
@@ -701,8 +749,12 @@
       <h3 style="font-size:22px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-lightbulb tr"></i> Consejos generales</h3>
       <ul class="tips" id="clist"></ul>
     </div>
-    <div class="snav mt8">
+    <div class="snav mt8" style="flex-direction:column;gap:10px">
       <button class="btn bsuc bfull" id="bsave" onclick="savePlan()"><i class="fa-solid fa-floppy-disk"></i> Guardar plan</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn bor" style="flex:1" onclick="showProgressSummary()"><i class="fa-solid fa-chart-pie"></i> Mi progreso</button>
+        <button class="btn bor" style="flex:1" onclick="exportPlanPDF()"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
+      </div>
     </div>
     <div style="text-align:center;margin-top:14px">
       <button class="btn bor" onclick="goHome()"><i class="fa-solid fa-circle-arrow-left"></i> Volver al inicio</button>
@@ -710,6 +762,23 @@
     <div style="height:20px"></div>
   </div>
 </div>
+
+<!-- ══════════════════════════════════════
+     PROGRESS SUMMARY MODAL
+══════════════════════════════════════ -->
+<div class="mo" id="modal-progress">
+  <div class="mb" style="max-width:480px">
+    <div class="mt2"><i class="fa-solid fa-chart-pie" style="color:var(--pri);margin-right:8px"></i>Resumen de progreso</div>
+    <div id="progress-summary-content"></div>
+    <div class="mac">
+      <button class="btn bo bfull" onclick="document.getElementById('modal-progress').classList.remove('open')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TIME HISTORY — integrated in profile
+══════════════════════════════════════ -->
 
 <!-- ══════════════════════════════════════
      HISTORY
@@ -791,7 +860,6 @@ function clearProfile() {
 
 function renderProfileScreen() {
   const p = getProfile();
-  const c = document.getElementById('profile-content');
   if (!p) {
     c.innerHTML = `<div class="empty"><i class="fa-solid fa-user-slash"></i><p>Aún no tienes un perfil guardado.<br>Se guarda automáticamente al crear tu primer plan.</p></div>`;
     return;
@@ -840,6 +908,7 @@ function renderProfileScreen() {
         <div class="profile-field"><span class="profile-field-label">Apps</span><span class="profile-field-value">${esc(p.apps||'Ninguna')}</span></div>
       </div>
     </div>`;
+  renderTimeHistory();
 }
 
 function loadProfileIntoWizard() {
@@ -2085,8 +2154,206 @@ function getAlternative(badge) {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  PROGRESS TRACKING
+//  PROGRESS SUMMARY
 // ═══════════════════════════════════════════════════════════
+function showProgressSummary() {
+  if (!planObj || !formData) { showToast('Abre un plan primero'); return; }
+  const planId = currentPlanId || 'preview';
+  const prog = getProgress(planId);
+
+  let totalSess = 0, doneSess = 0, skipSess = 0, totalKm = 0, doneKm = 0;
+  const weekStats = [];
+
+  planObj.weeks.forEach(w => {
+    let wDone = 0, wSkip = 0, wKm = 0, wDoneKm = 0;
+    w.sessions.forEach(s => {
+      const key = getSessKey(w.num, s.day);
+      const status = prog[key] || '';
+      const km = parseFloat((s.detail||'').match(/^(\d+(?:\.\d+)?)\s*km/)?.[1] || 0);
+      totalSess++; totalKm += km;
+      if (status === 'done')    { doneSess++; doneKm += km; wDone++; wDoneKm += km; }
+      if (status === 'skipped') { skipSess++; wSkip++; }
+      wKm += km;
+    });
+    weekStats.push({ num:w.num, total:w.sessions.length, done:wDone, skipped:wSkip, km:wKm, doneKm:wDoneKm });
+  });
+
+  const pendSess = totalSess - doneSess - skipSess;
+  const pct = totalSess > 0 ? Math.round((doneSess/totalSess)*100) : 0;
+  const kmPct = totalKm > 0 ? Math.round((doneKm/totalKm)*100) : 0;
+
+  // Motivational message
+  const msgs = [
+    pct === 0   ? '¡Aún no has comenzado! El primer paso es el más importante. 🚀' : '',
+    pct < 25    ? `¡Buen comienzo! Llevas el ${pct}% del camino. Cada sesión cuenta. 💪` : '',
+    pct < 50    ? `¡Vas por buen camino! Ya completaste el ${pct}%. Mantén el ritmo. 🏃‍♀️` : '',
+    pct < 75    ? `¡Más de la mitad! El ${pct}% completado. La línea de meta se acerca. 🔥` : '',
+    pct < 100   ? `¡Casi listo! ${pct}% completado. ¡No pares ahora! 🏅` : '',
+    pct === 100 ? '¡Plan completado al 100%! Eres increíble. ¡Ahora a disfrutar la carrera! 🏆' : '',
+  ].filter(Boolean)[0];
+
+  const weeksHTML = weekStats.filter(w => w.done > 0 || w.skipped > 0).map(w => {
+    const wp = w.total > 0 ? Math.round((w.done/w.total)*100) : 0;
+    const color = wp >= 80 ? 'var(--ok)' : wp >= 50 ? 'var(--warn)' : 'var(--acc)';
+    return '<div class="psumm-week">' +
+      '<span>Semana ' + w.num + '</span>' +
+      '<span style="color:var(--muted);font-size:12px">' + w.done + '/' + w.total + ' · ' + Math.round(w.doneKm) + ' km</span>' +
+      '<span style="color:' + color + ';font-weight:700">' + wp + '%</span>' +
+    '</div>';
+  }).join('');
+
+  document.getElementById('progress-summary-content').innerHTML =
+    '<div class="psumm-grid">' +
+      '<div class="psumm-card"><span class="psumm-val">' + doneSess + '</span><div class="psumm-lbl">✅ Realizadas</div></div>' +
+      '<div class="psumm-card"><span class="psumm-val">' + skipSess + '</span><div class="psumm-lbl">⏭ Omitidas</div></div>' +
+      '<div class="psumm-card"><span class="psumm-val">' + pendSess + '</span><div class="psumm-lbl">⏳ Pendientes</div></div>' +
+      '<div class="psumm-card"><span class="psumm-val">' + Math.round(doneKm) + '</span><div class="psumm-lbl">🏃 km completados</div></div>' +
+    '</div>' +
+    '<div style="margin-bottom:4px;font-size:13px;color:var(--muted)">Sesiones realizadas</div>' +
+    '<div class="psumm-bar"><div class="psumm-bar-fill" style="width:' + pct + '%;background:linear-gradient(90deg,var(--pri-d),var(--pri-b))"></div></div>' +
+    '<div style="text-align:right;font-size:12px;color:var(--pri);font-weight:700;margin-bottom:8px">' + pct + '%</div>' +
+    '<div style="margin-bottom:4px;font-size:13px;color:var(--muted)">Kilómetros completados</div>' +
+    '<div class="psumm-bar"><div class="psumm-bar-fill" style="width:' + kmPct + '%;background:linear-gradient(90deg,#388E3C,#66BB6A)"></div></div>' +
+    '<div style="text-align:right;font-size:12px;color:var(--ok);font-weight:700;margin-bottom:12px">' + kmPct + '%</div>' +
+    (weeksHTML ? '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">Por semana</div>' + weeksHTML : '') +
+    '<div class="psumm-mot">' + msgs + '</div>';
+
+  document.getElementById('modal-progress').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TIME HISTORY
+// ═══════════════════════════════════════════════════════════
+function getTimeHistory() {
+  try { return JSON.parse(localStorage.getItem('runcoach_times') || '[]'); } catch { return []; }
+}
+function setTimeHistory(data) {
+  localStorage.setItem('runcoach_times', JSON.stringify(data));
+}
+
+function addTimeRecord() {
+  const dist  = document.getElementById('th-dist').value;
+  const time  = document.getElementById('th-time').value.trim();
+  const date  = document.getElementById('th-date').value;
+  if (!dist || !time) { showToast('Completa distancia y tiempo'); return; }
+
+  // Calculate pace
+  const parts = time.match(/(\d+):(\d+)(?::(\d+))?/);
+  let paceSec = null;
+  if (parts) {
+    const totalSec = parts[3] ? (+parts[1]*3600 + +parts[2]*60 + +parts[3]) : (+parts[1]*60 + +parts[2]);
+    const distKm = {'5K':5,'10K':10,'15K':15,'21K':21,'42K':42}[dist] || 10;
+    paceSec = Math.round(totalSec / distKm);
+  }
+  const paceStr = paceSec ? Math.floor(paceSec/60) + ':' + (paceSec%60).toString().padStart(2,'0') + ' min/km' : '';
+
+  const records = getTimeHistory();
+  records.unshift({ id: Date.now(), dist, time, pace: paceStr, date: date || new Date().toISOString().slice(0,10) });
+  setTimeHistory(records);
+
+  document.getElementById('th-dist').value = '';
+  document.getElementById('th-time').value = '';
+  document.getElementById('th-date').value = '';
+  renderTimeHistory();
+  showToast('Tiempo registrado ✓');
+}
+
+function deleteTimeRecord(id) {
+  const records = getTimeHistory().filter(r => r.id !== id);
+  setTimeHistory(records);
+  renderTimeHistory();
+}
+
+function renderTimeHistory() {
+  const records = getTimeHistory();
+  const c = document.getElementById('time-history-list');
+  if (!c) return;
+  if (!records.length) {
+    c.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:12px 0">Aún no has registrado tiempos</div>';
+    return;
+  }
+  c.innerHTML = records.map(r =>
+    '<div class="th-row">' +
+      '<div>' +
+        '<div style="display:flex;align-items:baseline;gap:8px">' +
+          '<span class="th-dist">' + r.dist + '</span>' +
+          '<span class="th-time">' + r.time + '</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:12px;margin-top:2px">' +
+          (r.pace ? '<span class="th-pace">⚡ ' + r.pace + '</span>' : '') +
+          '<span class="th-date">📅 ' + r.date + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<button class="th-del" onclick="deleteTimeRecord(' + r.id + ')"><i class="fa-solid fa-trash"></i></button>' +
+    '</div>'
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXPORT PLAN AS PDF
+// ═══════════════════════════════════════════════════════════
+function exportPlanPDF() {
+  if (!planObj || !formData) { showToast('Abre un plan primero'); return; }
+
+  // Build printable HTML
+  const planId = currentPlanId || 'preview';
+  const prog = getProgress(planId);
+
+  let html = '<html><head><meta charset="utf-8">' +
+    '<title>' + esc(formData.nombrePlan) + '</title>' +
+    '<style>' +
+    'body{font-family:Arial,sans-serif;color:#1a1a2e;padding:20px;max-width:800px;margin:0 auto}' +
+    'h1{color:#26C6DA;font-size:22px;border-bottom:2px solid #26C6DA;padding-bottom:8px}' +
+    'h2{color:#1a1a2e;font-size:16px;margin-top:20px;margin-bottom:8px;background:#f0f8ff;padding:6px 10px;border-radius:4px}' +
+    '.meta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;font-size:13px;color:#555}' +
+    '.meta span{background:#e8f4f8;padding:4px 10px;border-radius:12px}' +
+    'table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}' +
+    'th{background:#26C6DA;color:#fff;padding:6px 10px;text-align:left}' +
+    'td{padding:6px 10px;border-bottom:1px solid #eee}' +
+    'tr:nth-child(even) td{background:#f9f9f9}' +
+    '.done{color:#388E3C;font-weight:bold} .skip{color:#e53935}' +
+    '.tip{background:#fff3e0;padding:6px 10px;border-left:3px solid #FF9800;margin-bottom:6px;font-size:12px}' +
+    '@media print{body{padding:0}}' +
+    '</style></head><body>';
+
+  html += '<h1>🏃 ' + esc(formData.nombrePlan) + '</h1>';
+  html += '<div class="meta">' +
+    '<span>👤 ' + esc(formData.nombre) + '</span>' +
+    '<span>🎯 ' + esc(formData.distMeta) + '</span>' +
+    '<span>📅 ' + planObj.totalW + ' semanas</span>' +
+    (formData.fechaInicio ? '<span>▶ Inicio: ' + formData.fechaInicio + '</span>' : '') +
+    (formData.fechaCarrera ? '<span>🏁 Carrera: ' + formData.fechaCarrera + '</span>' : '') +
+    '</div>';
+
+  planObj.weeks.forEach(w => {
+    html += '<h2>Semana ' + w.num + ' · ' + w.vol + ' km</h2>';
+    html += '<table><tr><th>Día</th><th>Sesión</th><th>Detalle</th><th>Estado</th></tr>';
+    w.sessions.forEach(s => {
+      const key = getSessKey(w.num, s.day);
+      const status = prog[key] || '';
+      const statusTxt = status === 'done' ? '<span class="done">✓ Realizado</span>' :
+                        status === 'skipped' ? '<span class="skip">— Omitido</span>' : '—';
+      html += '<tr><td>' + s.day + '</td><td>' + s.tipo + '</td><td>' + s.detail + '</td><td>' + statusTxt + '</td></tr>';
+    });
+    html += '</table>';
+  });
+
+  if (planObj.tips && planObj.tips.length) {
+    html += '<h2>💡 Consejos</h2>';
+    planObj.tips.forEach(t => { html += '<div class="tip">' + esc(t) + '</div>'; });
+  }
+
+  html += '</body></html>';
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (formData.nombrePlan || 'plan').replace(/\s+/g,'-') + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Plan exportado — ábrelo en el navegador e imprime como PDF 🖨️');
+}
 function getProgress(planId) {
   try { return JSON.parse(localStorage.getItem('runcoach_progress_'+planId)||'{}'); } catch { return {}; }
 }

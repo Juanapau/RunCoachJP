@@ -836,7 +836,12 @@ let currentPlanId = null;
 // ═══════════════════════════════════════════════════════════
 function goApp(id) {
   document.getElementById('sc-splash').classList.add('hidden');
-  if (id === 'wizard') { cStep = 1; renderStep(1); loadProfileIntoWizard(); }
+  if (id === 'wizard') {
+    window._editingPlanId = null;
+    cStep = 1; renderStep(1);
+    clearPlanFields();
+    loadProfileIntoWizard();
+  }
   if (id === 'history') renderHistory();
   if (id === 'profile') renderProfileScreen();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1047,6 +1052,29 @@ function startWizard() { cStep = 1; renderStep(1); showScreen('wizard'); }
 // ═══════════════════════════════════════════════════════════
 //  WIZARD
 // ═══════════════════════════════════════════════════════════
+function clearPlanFields() {
+  // Step 3 — Objetivo (plan-specific)
+  setVal('f13', ''); // distancia meta
+  setVal('f13b', ''); // otra distancia
+  document.getElementById('otra-wrap').style.display = 'none';
+  document.querySelectorAll('#rg-obj .ro').forEach(el => el.classList.remove('sel'));
+  document.getElementById('tobj-wrap').style.display = 'none';
+  document.getElementById('pobj-wrap').style.display = 'none';
+  setVal('f14', ''); // tiempo objetivo
+  setVal('f14b', ''); // pace objetivo
+  setVal('f15a', ''); // fecha inicio
+  setVal('f15', ''); // fecha carrera
+  document.getElementById('sem-info').style.display = 'none';
+  // Step 4 — Disponibilidad (plan-specific)
+  document.querySelectorAll('#dts .dt').forEach(el => el.classList.remove('sel'));
+  setVal('f16', '');
+  setVal('f16c', '');
+  document.getElementById('otra-duracion-wrap').style.display = 'none';
+  document.querySelectorAll('#rg-hor .ro').forEach(el => el.classList.remove('sel'));
+  // Step 8 — Nombre del plan
+  setVal('f22', '');
+}
+
 function renderStep(s) {
   document.querySelectorAll('.wstep').forEach((el, i) => el.style.display = i + 1 === s ? 'block' : 'none');
   const pct = Math.round(s / STEPS * 100);

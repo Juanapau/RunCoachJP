@@ -214,10 +214,13 @@
     }
     #sc-splash.hidden{opacity:0;visibility:hidden;pointer-events:none}
     #sc-splash::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--pri-d),var(--pri),var(--sec-b))}
-    .slogo{font-size:56px;color:var(--pri);margin-bottom:2px;filter:drop-shadow(0 0 20px rgba(38,198,218,.4))}
-    .stit{font-size:clamp(44px,13vw,66px);line-height:.9;margin-bottom:6px;color:#fff}
-    .stagline{font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;letter-spacing:.35em;color:var(--muted);text-transform:uppercase;margin-bottom:20px}
-    .sdivider{width:36px;height:2px;background:linear-gradient(90deg,var(--pri-d),var(--pri-b));margin:0 auto 18px;border-radius:2px}
+    .slogo{font-size:88px;color:var(--pri);margin-bottom:4px;filter:drop-shadow(0 0 32px rgba(38,198,218,.5));line-height:1}
+    .stit{font-size:clamp(52px,16vw,80px);line-height:.9;margin-bottom:6px;color:#fff;letter-spacing:.02em}
+    .stagline{font-size:12px;font-family:'Nunito',sans-serif;font-weight:700;letter-spacing:.4em;color:var(--pri);text-transform:uppercase;margin-bottom:16px}
+    .sdivider{width:48px;height:2px;background:linear-gradient(90deg,var(--pri-d),var(--pri-b));margin:0 auto 16px;border-radius:2px}
+    .sdesc{font-size:14px;color:var(--muted);text-align:center;line-height:1.6;font-family:'Nunito',sans-serif;margin-bottom:0}
+    .splash-pill{background:rgba(38,198,218,.1);border:1px solid rgba(38,198,218,.2);color:var(--pri);font-size:12px;font-weight:700;font-family:'Nunito',sans-serif;padding:5px 12px;border-radius:20px;display:flex;align-items:center;gap:5px}
+    .splash-dist{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;font-size:14px;font-weight:800;font-family:'Bebas Neue',sans-serif;padding:8px 16px;border-radius:8px;letter-spacing:.08em}
     .sdesc{font-size:14px;color:#5a6a7a;max-width:280px;line-height:1.7;margin-bottom:28px}
     .sacts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
     .sfoot{margin-top:24px;font-size:11px;color:#2a3a4a;letter-spacing:.1em;text-transform:uppercase}
@@ -415,20 +418,45 @@
      SPLASH — PORTADA
 ══════════════════════════════════════ -->
 <div id="sc-splash">
-  <div class="slogo"><i class="fa-solid fa-person-running"></i></div>
-  <h1 class="stit">RunCoach</h1>
-  <p class="stagline">Tu entrenador de running</p>
-  <div class="sdivider"></div>
-  <p class="sdesc">Planes personalizados según tu perfil real. Sin internet, sin cuentas, sin costos.</p>
-  <div class="sacts">
-    <button class="btn bp bfull" onclick="goApp('wizard')">
-      <i class="fa-solid fa-circle-arrow-right"></i> Crear nuevo plan
-    </button>
-    <button class="btn bo bfull" onclick="goApp('history')">
-      <i class="fa-solid fa-list"></i> Ver mis planes
-    </button>
+  <div style="width:100%;max-width:400px;padding:0 24px;display:flex;flex-direction:column;align-items:center">
+
+    <!-- Logo -->
+    <div class="slogo">
+      <i class="fa-solid fa-person-running"></i>
+    </div>
+
+    <!-- Title -->
+    <h1 class="stit">RunCoach</h1>
+    <p class="stagline">Tu entrenador de running</p>
+    <div class="sdivider"></div>
+
+    <!-- Tagline -->
+    <p class="sdesc" style="font-size:15px;max-width:280px;line-height:1.7">
+      Planes de entrenamiento 100% personalizados, generados según tu perfil real.
+    </p>
+
+    <!-- Feature pills -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:18px 0">
+      <span class="splash-pill"><i class="fa-solid fa-wifi-slash"></i> Sin internet</span>
+      <span class="splash-pill"><i class="fa-solid fa-user-slash"></i> Sin cuenta</span>
+      <span class="splash-pill"><i class="fa-solid fa-tag"></i> Gratis</span>
+      <span class="splash-pill"><i class="fa-solid fa-dumbbell"></i> IA incluida</span>
+    </div>
+
+    <!-- Distances -->
+    <div style="display:flex;gap:10px;margin-bottom:24px">
+      <div class="splash-dist">5K</div>
+      <div class="splash-dist">10K</div>
+      <div class="splash-dist">21K</div>
+      <div class="splash-dist">42K</div>
+    </div>
+
+    <!-- Hint -->
+    <p style="font-size:12px;color:#607D8B;text-align:center;line-height:1.6">
+      Usa el menú inferior para crear un plan,<br>ver tus planes guardados o tu perfil
+    </p>
+
   </div>
-  <p class="sfoot">100% offline &nbsp;·&nbsp; sin registro &nbsp;·&nbsp; gratis</p>
 </div>
 
 <!-- ══════════════════════════════════════

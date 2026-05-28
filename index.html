@@ -860,8 +860,11 @@ function clearProfile() {
 
 function renderProfileScreen() {
   const p = getProfile();
+  const c = document.getElementById('profile-content');
+  if (!c) return;
   if (!p) {
     c.innerHTML = `<div class="empty"><i class="fa-solid fa-user-slash"></i><p>Aún no tienes un perfil guardado.<br>Se guarda automáticamente al crear tu primer plan.</p></div>`;
+    renderTimeHistory();
     return;
   }
   c.innerHTML = `

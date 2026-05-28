@@ -820,8 +820,193 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
-//  STATE
+//  GOOGLE SHEETS SYNC
 // ═══════════════════════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQeAp2an4DTaESTlpFo_n-haJB84DMSXZg9OTIVni30iQ2TPYwDGTAXQZJAlGnFvz6/exec';
+
+// Genera o recupera el ID único del corredor
+function getCorredorId() {
+  let id = localStorage.getItem('runcoach_corredor_id');
+  if (!id) {
+    id = 'runner-' + Date.now() + '-' + Math.random().toString(36).slice(2,9);
+    localStorage.setItem('runcoach_corredor_id', id);
+  }
+  return id;
+}
+
+// POST a Apps Script
+async function dbPost(action, payload) {
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, payload }),
+    });
+    return await resp.json();
+  } catch(e) {
+    console.warn('DB sync error:', e);
+    return { ok: false, error: e.toString() };
+  }
+}
+
+// GET a Apps Script
+async function dbGet(params) {
+  try {
+    const qs = new URLSearchParams(params).toString();
+    const resp = await fetch(APPS_SCRIPT_URL + '?' + qs);
+    return await resp.json();
+  } catch(e) {
+    console.warn('DB get error:', e);
+    return { ok: false, error: e.toString() };
+  }
+}
+
+// Indicador de sincronización
+function showSyncStatus(msg, ok = true) {
+  let el = document.getElementById('sync-status');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sync-status';
+    el.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);' +
+      'background:#1e2a3a;border:1px solid rgba(38,198,218,.3);color:var(--pri);' +
+      'font-size:12px;padding:6px 14px;border-radius:20px;z-index:9999;' +
+      'font-family:Nunito,sans-serif;font-weight:700;transition:opacity .4s;white-space:nowrap';
+    document.body.appendChild(el);
+  }
+  el.style.color = ok ? 'var(--pri)' : 'var(--warn)';
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+}
+
+// ── SYNC: PERFIL ──────────────────────────────────────────
+async function syncProfile(profileData) {
+  if (!navigator.onLine) return;
+  const payload = {
+    corredor_id: getCorredorId(),
+    fecha_registro: new Date().toISOString().slice(0,10),
+    nombre: profileData.nombre,
+    edad: profileData.edad,
+    sexo: profileData.sexo,
+    peso_kg: profileData.peso,
+    estatura_cm: profileData.estatura,
+    fc_reposo: profileData.fcReposo || 0,
+    fc_max: profileData.fcMax || 0,
+    experiencia: profileData.experiencia,
+    km_semanales: profileData.kmSemanales,
+    ritmo_habitual: profileData.ritmoHabitual || '',
+    dist_max: profileData.distMax,
+    lesion: profileData.lesion,
+    lesion_desc: profileData.lesionDesc || '',
+    cirugia: profileData.cirugia,
+    superficie: profileData.superficie || '',
+    topografia: profileData.topografia,
+    gimnasio: profileData.gimnasio,
+    clima: profileData.clima,
+    sueno_hrs: profileData.sueno,
+    estres: profileData.estres,
+    actividades: profileData.actividades || '',
+    alimentacion: profileData.alimentacion,
+    reloj_gps: profileData.relojGPS,
+    monitor_fc: profileData.monitorFC,
+    apps: profileData.apps || '',
+  };
+  const r = await dbPost('saveProfile', payload);
+  if (r.ok) showSyncStatus('☁ Perfil sincronizado');
+}
+
+// ── SYNC: PLAN + SESIONES ─────────────────────────────────
+async function syncPlan(planData, formData, planObj) {
+  if (!navigator.onLine) return;
+  const corredor_id = getCorredorId();
+
+  // 1. Guardar metadata del plan
+  const planPayload = {
+    plan_id: planData.id,
+    corredor_id,
+    nombre_plan: formData.nombrePlan,
+    fecha_creacion: planData.fechaCreacion,
+    fecha_editado: planData.fechaEditado || '',
+    dist_meta: formData.distMeta,
+    objetivo: formData.objetivo,
+    tiempo_obj: formData.tiempoObj || '',
+    pace_obj: formData.paceObj || '',
+    fecha_inicio: formData.fechaInicio || '',
+    fecha_carrera: formData.fechaCarrera || '',
+    total_semanas: planObj.totalW,
+    dias_semana: formData.dias,
+    dur_max_dia: formData.durMax,
+    dur_max_largo: formData.durMaxLargo,
+    horario: formData.horario,
+    estado: 'activo',
+  };
+  await dbPost('savePlan', planPayload);
+
+  // 2. Guardar todas las sesiones del plan
+  const sesiones = [];
+  planObj.weeks.forEach(w => {
+    w.sessions.forEach((s, idx) => {
+      const km = parseFloat((s.detail||'').match(/^(\d+(?:\.\d+)?)\s*km/)?.[1] || 0);
+      const paceMatch = (s.detail||'').match(/(\d+:\d+)\s*min\/km/);
+      sesiones.push({
+        sesion_id: planData.id + '_S_' + w.num + '_' + s.day,
+        plan_id: planData.id,
+        semana_num: w.num,
+        dia_nombre: s.day,
+        fecha_dia: '',
+        tipo: s.tipo,
+        badge: s.badge,
+        detalle: s.detail,
+        km,
+        pace_sesion: paceMatch ? paceMatch[1] : '',
+        nota: s.note || '',
+        semana_vol: w.vol,
+      });
+    });
+  });
+  const r = await dbPost('saveSessions', { plan_id: planData.id, sesiones });
+  if (r.ok) showSyncStatus('☁ Plan sincronizado con Google Sheets');
+  else showSyncStatus('⚠ Sin conexión — guardado localmente', false);
+}
+
+// ── SYNC: PROGRESO ────────────────────────────────────────
+async function syncMarkSession(planId, weekNum, dayName, status) {
+  if (!navigator.onLine) return;
+  const r = await dbPost('markSession', {
+    corredor_id: getCorredorId(),
+    plan_id: planId,
+    semana_num: weekNum,
+    dia_nombre: dayName,
+    estado: status,
+    km_reales: 0,
+    nota_corredor: '',
+  });
+  if (r.ok) showSyncStatus('☁ Progreso guardado en la nube');
+}
+
+// ── SYNC: TIEMPOS ─────────────────────────────────────────
+async function syncAddTime(record) {
+  if (!navigator.onLine) return;
+  await dbPost('addTime', {
+    corredor_id: getCorredorId(),
+    distancia: record.dist,
+    tiempo: record.time,
+    pace_km: record.pace,
+    fecha: record.date,
+    es_oficial: false,
+    notas: '',
+  });
+}
+
+async function syncDeleteTime(timeId) {
+  if (!navigator.onLine) return;
+  await dbPost('deleteTime', { tiempo_id: timeId });
+}
+
+async function syncDeletePlan(planId) {
+  if (!navigator.onLine) return;
+  await dbPost('deletePlan', { plan_id: planId });
+}
 let cStep = 1;
 const STEPS = 8;
 const SNAMES = ['Perfil físico','Nivel actual','Objetivo','Disponibilidad','Salud','Entorno','Recuperación','Tecnología'];
@@ -894,6 +1079,7 @@ function saveProfile(d) {
     //               durMaxLargo, horario, semanasDisp, nombrePlan
   };
   localStorage.setItem('runcoach_profile', JSON.stringify(profile));
+  syncProfile(profile); // sync to Google Sheets in background
 }
 
 function getProfile() {
@@ -2321,9 +2507,11 @@ function addTimeRecord() {
   }
   const paceStr = paceSec ? Math.floor(paceSec/60) + ':' + (paceSec%60).toString().padStart(2,'0') + ' min/km' : '';
 
+  const record = { id: Date.now(), dist, time, pace: paceStr, date: date || new Date().toISOString().slice(0,10) };
   const records = getTimeHistory();
-  records.unshift({ id: Date.now(), dist, time, pace: paceStr, date: date || new Date().toISOString().slice(0,10) });
+  records.unshift(record);
   setTimeHistory(records);
+  syncAddTime(record); // sync to Sheets
 
   document.getElementById('th-dist').value = '';
   document.getElementById('th-time').value = '';
@@ -2335,6 +2523,7 @@ function addTimeRecord() {
 function deleteTimeRecord(id) {
   const records = getTimeHistory().filter(r => r.id !== id);
   setTimeHistory(records);
+  syncDeleteTime(id); // sync to Sheets
   renderTimeHistory();
 }
 
@@ -2444,6 +2633,7 @@ function markSession(planId, weekNum, dayName, status) {
   prog[key] = prev === status ? '' : status;
   setProgress(planId, prog);
   updateProgressBar(planId);
+  syncMarkSession(planId, weekNum, dayName, newStatus); // sync to Sheets
   const newStatus = prog[key];
   const row = document.getElementById('sr_' + key);
   if (!row) return;
@@ -2773,6 +2963,8 @@ function savePlan() {
   setPlanes(planes);
   if (formData) saveProfile(formData);
   currentPlanId = id;
+  // Sync to Google Sheets in background
+  syncPlan(plan, formData, planObj);
 
   const btn = document.getElementById('bsave');
   btn.disabled = true;
@@ -2783,6 +2975,7 @@ function savePlan() {
 
 function deletePlan(id) {
   setPlanes(getPlanes().filter(p => p.id !== id));
+  syncDeletePlan(id); // sync to Sheets
   renderHistory();
   showToast('Plan eliminado');
 }

@@ -839,8 +839,10 @@ function goApp(id) {
   if (id === 'wizard') {
     window._editingPlanId = null;
     cStep = 1; renderStep(1);
-    clearPlanFields();
+    // First load profile (personal data), then clear plan-specific fields
+    // so profile data never fills plan fields
     loadProfileIntoWizard();
+    setTimeout(() => clearPlanFields(), 50); // slight delay ensures profile loaded first
   }
   if (id === 'history') renderHistory();
   if (id === 'profile') renderProfileScreen();
@@ -863,20 +865,29 @@ function goHome() {
 //  PROFILE MANAGEMENT
 // ═══════════════════════════════════════════════════════════
 function saveProfile(d) {
+  // Solo guardar datos PERSONALES del corredor, nunca datos del plan
   const profile = {
     nombre: d.nombre, edad: d.edad, sexo: d.sexo,
     peso: d.peso, estatura: d.estatura,
     fcReposo: d.fcReposo, fcMax: d.fcMax,
+    // Nivel actual
     experiencia: d.experiencia, kmSemanales: d.kmSemanales,
     ritmoHabitual: d.ritmoHabitual, distMax: d.distMax,
+    // Salud
     lesion: d.lesion, lesionDesc: d.lesionDesc,
     cirugia: d.cirugia, cirugiaDesc: d.cirugiaDesc,
     autorizacion: d.autorizacion,
+    // Entorno
     superficie: d.superficie, topografia: d.topografia,
     gimnasio: d.gimnasio, clima: d.clima,
+    // Recuperación
     sueno: d.sueno, estres: d.estres,
     actividades: d.actividades, alimentacion: d.alimentacion,
+    // Tecnología
     relojGPS: d.relojGPS, monitorFC: d.monitorFC, apps: d.apps,
+    // NO se guarda: distMeta, objetivo, tiempoObj, paceObj,
+    //               fechaCarrera, fechaInicio, dias, durMax,
+    //               durMaxLargo, horario, semanasDisp, nombrePlan
   };
   localStorage.setItem('runcoach_profile', JSON.stringify(profile));
 }

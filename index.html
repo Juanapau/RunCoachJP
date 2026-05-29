@@ -1025,6 +1025,7 @@ function goApp(id) {
     window._editingPlanId = null;
     cStep = 1; renderStep(1);
     clearPlanFields();
+    loadProfileIntoWizard();
   }
   if (id === 'wizard-from-profile') {
     window._editingPlanId = null;

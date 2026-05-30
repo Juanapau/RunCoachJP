@@ -3509,9 +3509,32 @@ function setVal(id, val) {
 function viewPlan(id) {
   const p = getPlanes().find(p => p.id === id);
   if (!p) return;
-  planObj = p.planObj; formData = p.formData;
-  planObj.d = formData;
+  formData = p.formData;
   currentPlanId = id;
+
+  // If planObj is null (recovered from Sheets), regenerate it from formData
+  if (!p.planObj && formData) {
+    showScreen('loading');
+    startLoadMsg();
+    setTimeout(() => {
+      planObj = generatePlan(formData);
+      // Save regenerated planObj back to localStorage
+      const planes = getPlanes();
+      const idx = planes.findIndex(pl => pl.id === id);
+      if (idx !== -1) { planes[idx].planObj = planObj; setPlanes(planes); }
+      stopLoadMsg();
+      renderPlan(planObj, formData);
+      const btn = document.getElementById('bsave');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Ya guardado';
+      btn.style.background = '#37474F';
+      showScreen('plan');
+    }, 1500);
+    return;
+  }
+
+  planObj = p.planObj;
+  planObj.d = formData;
   renderPlan(planObj, formData);
   const btn = document.getElementById('bsave');
   btn.disabled = true;

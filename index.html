@@ -1817,14 +1817,17 @@ function prevStep() { if (cStep > 1) { cStep--; renderStep(cStep); } }
 // ═══════════════════════════════════════════════════════════
 function req(id, eid, fn) {
   const el = document.getElementById(id);
-  const ok = fn ? fn(el) : (el.value && el.value.trim());
+  if (!el) return true; // element doesn't exist, skip
+  const ok = fn ? fn(el) : (el.value !== undefined && el.value !== '' && el.value.trim() !== '');
   el.classList.toggle('err', !ok);
   const er = document.getElementById(eid);
   if (er) er.classList.toggle('on', !ok);
   return !!ok;
 }
 function reqR(gid, eid) {
-  const ok = !!document.querySelector(`#${gid} .ro.sel`);
+  const group = document.getElementById(gid);
+  if (!group) return true; // group doesn't exist, skip
+  const ok = !!group.querySelector('.ro.sel');
   const er = document.getElementById(eid);
   if (er) er.classList.toggle('on', !ok);
   return ok;
@@ -1832,22 +1835,50 @@ function reqR(gid, eid) {
 function valStep(s) {
   let ok = true;
   const c = v => { if (!v) ok = false; return v; };
+
   if (s === 1) {
-    c(req('f1','e1')); c(req('f2','e2',el=>el.value&&+el.value>=10&&+el.value<=80));
-    c(req('f3','e3')); c(req('f4','e4')); c(req('f5','e5'));
+    c(req('f1','e1'));
+    c(req('f2','e2', el => el.value && +el.value >= 10 && +el.value <= 80));
+    c(req('f3','e3'));
+    c(req('f4','e4', el => el.value && +el.value > 0));
+    c(req('f5','e5', el => el.value && +el.value > 0));
   }
-  if (s === 2) { c(req('f8','e8')); c(req('f9','e9',el=>el.value!=='')); c(req('f11','e11')); }
-  if (s === 3) { c(req('f13','e13')); c(reqR('rg-obj','e-obj')); }
+  if (s === 2) {
+    c(req('f8','e8', el => el.value !== ''));
+    c(req('f9','e9', el => el.value !== '' && +el.value >= 0));
+    c(req('f11','e11', el => el.value !== ''));
+  }
+  if (s === 3) {
+    c(req('f13','e13', el => el.value !== ''));
+    c(reqR('rg-obj','e-obj'));
+  }
   if (s === 4) {
     const days = getDays();
     const ed = document.getElementById('e-dias');
     if (days.length < 2) { ed.classList.add('on'); ok = false; } else ed.classList.remove('on');
-    c(req('f16','e16')); c(req('f16c','e16c')); c(reqR('rg-hor','e-hor'));
+    c(req('f16','e16', el => el.value !== ''));
+    c(req('f16c','e16c', el => el.value !== ''));
+    c(reqR('rg-hor','e-hor'));
   }
-  if (s === 5) { c(reqR('rg-les','e-les')); c(reqR('rg-cir','e-cir')); }
-  if (s === 6) { c(reqR('rg-top','e-top')); c(reqR('rg-gym','e-gym')); c(req('f19','e19')); }
-  if (s === 7) { c(reqR('rg-est','e-est')); c(req('f21','e21')); }
-  if (s === 8) { c(reqR('rg-rel','e-rel')); c(reqR('rg-mfc','e-mfc')); c(req('f22','e22')); }
+  if (s === 5) {
+    c(reqR('rg-les','e-les'));
+    c(reqR('rg-cir','e-cir'));
+    // rg-aut is optional
+  }
+  if (s === 6) {
+    c(reqR('rg-top','e-top'));
+    c(reqR('rg-gym','e-gym'));
+    c(req('f19','e19', el => el.value !== ''));
+  }
+  if (s === 7) {
+    c(reqR('rg-est','e-est'));
+    // f21 (alimentación) is optional — don't block
+  }
+  if (s === 8) {
+    c(reqR('rg-rel','e-rel'));
+    // rg-mfc optional — not everyone has heart rate monitor
+    c(req('f22','e22'));
+  }
   return ok;
 }
 

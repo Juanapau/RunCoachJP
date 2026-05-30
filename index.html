@@ -1797,7 +1797,17 @@ function renderStep(s) {
   document.getElementById('bgen').style.display = s === STEPS ? 'flex' : 'none';
   if (s === STEPS) updRes();
 }
-function nextStep() { if (valStep(cStep)) { cStep++; renderStep(cStep); } }
+function nextStep() {
+  if (valStep(cStep)) {
+    cStep++;
+    renderStep(cStep);
+    window.scrollTo(0, 0);
+  } else {
+    // Scroll to first error
+    const firstErr = document.querySelector('.ferr.on, .ro-err.on');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
 function prevStep() { if (cStep > 1) { cStep--; renderStep(cStep); } }
 
 // ═══════════════════════════════════════════════════════════
@@ -1832,7 +1842,7 @@ function valStep(s) {
     if (days.length < 2) { ed.classList.add('on'); ok = false; } else ed.classList.remove('on');
     c(req('f16','e16')); c(req('f16c','e16c')); c(reqR('rg-hor','e-hor'));
   }
-  if (s === 5) { c(reqR('rg-les','e-les')); c(reqR('rg-cir','e-cir')); c(reqR('rg-aut','e-aut')); }
+  if (s === 5) { c(reqR('rg-les','e-les')); c(reqR('rg-cir','e-cir')); }
   if (s === 6) { c(reqR('rg-top','e-top')); c(reqR('rg-gym','e-gym')); c(req('f19','e19')); }
   if (s === 7) { c(reqR('rg-est','e-est')); c(req('f21','e21')); }
   if (s === 8) { c(reqR('rg-rel','e-rel')); c(reqR('rg-mfc','e-mfc')); c(req('f22','e22')); }
@@ -3060,8 +3070,8 @@ function renderPaceChart(plan, planId) {
   });
   const hasReal = weeks.some(w=>w.real);
   const allP = weeks.flatMap(w=>[w.planned,w.real]).filter(Boolean);
-  if (!allP.length) return '';
-  const minP=Math.min(...allP)-10, maxP=Math.max(...allP)+10;
+  if (!allP.length) return ''; // nothing to show
+  const minP=Math.min(...allP)-15, maxP=Math.max(...allP)+15;
   const W=340,H=140,pL=45,pB=25,pT=10,pR=10,iW=W-pL-pR,iH=H-pB-pT,n=weeks.length;
   const xP=i=>pL+(i/Math.max(n-1,1))*iW;
   const yP=p=>pT+iH-((p-minP)/(maxP-minP))*iH;

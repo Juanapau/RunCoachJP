@@ -3061,45 +3061,76 @@ async function syncRealTime(planId, weekNum, dayName, data) {
 function renderPaceChart(plan, planId) {
   const times = getRealTimes(planId);
   const weeks = plan.weeks.map(w => {
-    const rs = w.sessions.find(s => s.badge==='bs'||s.badge==='bl'||s.badge==='bi');
+    // Get planned pace — only from sessions that have a pace in min/km format
+    const rs = w.sessions.find(s => (s.badge==='bs'||s.badge==='bl'||s.badge==='bi') && (s.detail||'').includes('min/km'));
     let planned = null;
-    if (rs) { const pm = (rs.detail||'').match(/(\d+):(\d+)\s*min\/km/); if (pm) planned = +pm[1]*60 + +pm[2]; }
+    if (rs) {
+      const pm = (rs.detail||'').match(/(\d+):(\d+)\s*min\/km/);
+      if (pm) planned = +pm[1]*60 + +pm[2];
+    }
+    // Get average real pace for this week
     const wt = Object.values(times).filter(t => +t.weekNum === w.num && t.paceSec);
     const real = wt.length ? Math.round(wt.reduce((s,t)=>s+t.paceSec,0)/wt.length) : null;
     return { num:w.num, planned, real };
   });
-  const hasReal = weeks.some(w=>w.real);
-  const allP = weeks.flatMap(w=>[w.planned,w.real]).filter(Boolean);
-  if (!allP.length) return ''; // nothing to show
-  const minP=Math.min(...allP)-15, maxP=Math.max(...allP)+15;
-  const W=340,H=140,pL=45,pB=25,pT=10,pR=10,iW=W-pL-pR,iH=H-pB-pT,n=weeks.length;
-  const xP=i=>pL+(i/Math.max(n-1,1))*iW;
-  const yP=p=>pT+iH-((p-minP)/(maxP-minP))*iH;
-  const fp=s=>Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0');
-  let planPath='',realPath='';
-  weeks.forEach((w,i)=>{ if(w.planned) planPath+=(planPath?'L':'M')+xP(i)+' '+yP(w.planned); });
-  weeks.forEach((w,i)=>{ if(w.real) realPath+=(realPath?'L':'M')+xP(i)+' '+yP(w.real); });
-  const yLabels=[];
-  for(let s=Math.ceil(minP/30)*30;s<=maxP;s+=30) yLabels.push({y:yP(s),l:fp(s)});
-  const dots=weeks.map((w,i)=>{
-    let h='';
-    if(w.planned) h+=`<circle cx="${xP(i)}" cy="${yP(w.planned)}" r="3" fill="#26C6DA"/>`;
-    if(w.real)    h+=`<circle cx="${xP(i)}" cy="${yP(w.real)}" r="3.5" fill="#66BB6A"/>`;
-    if(i%Math.max(1,Math.floor(n/6))===0) h+=`<text x="${xP(i)}" y="${H-8}" text-anchor="middle" fill="#607D8B" font-size="9">S${w.num}</text>`;
+
+  const hasReal    = weeks.some(w => w.real);
+  const hasPlanned = weeks.some(w => w.planned);
+
+  // Need at least real data to show chart
+  if (!hasReal && !hasPlanned) return '';
+
+  // Build Y range only from available data
+  const allPaces = weeks.flatMap(w => [w.planned, w.real]).filter(Boolean);
+  if (!allPaces.length) return '';
+
+  const minP = Math.min(...allPaces) - 15;
+  const maxP = Math.max(...allPaces) + 15;
+  const W=340, H=140, pL=45, pB=25, pT=10, pR=10;
+  const iW=W-pL-pR, iH=H-pB-pT, n=weeks.length;
+  const xP = i => pL + (i / Math.max(n-1, 1)) * iW;
+  const yP = p => pT + iH - ((p - minP) / (maxP - minP)) * iH;
+  const fp = s => Math.floor(s/60) + ':' + (s%60).toString().padStart(2,'0');
+
+  let planPath='', realPath='';
+  weeks.forEach((w,i) => { if(w.planned) planPath += (planPath?'L':'M') + xP(i) + ' ' + yP(w.planned); });
+  weeks.forEach((w,i) => { if(w.real)    realPath += (realPath?'L':'M') + xP(i) + ' ' + yP(w.real); });
+
+  const yLabels = [];
+  for (let s = Math.ceil(minP/30)*30; s <= maxP; s += 30) yLabels.push({y:yP(s), l:fp(s)});
+
+  const dots = weeks.map((w,i) => {
+    let h = '';
+    if (w.planned) h += `<circle cx="${xP(i)}" cy="${yP(w.planned)}" r="3" fill="#26C6DA"/>`;
+    if (w.real)    h += `<circle cx="${xP(i)}" cy="${yP(w.real)}" r="3.5" fill="#66BB6A"/>`;
+    if (i % Math.max(1, Math.floor(n/6)) === 0)
+      h += `<text x="${xP(i)}" y="${H-8}" text-anchor="middle" fill="#607D8B" font-size="9">S${w.num}</text>`;
     return h;
   }).join('');
+
+  // Adaptive legend — only show lines that exist
+  const legend =
+    (hasPlanned ? '<span><span class="pace-legend-dot" style="background:#26C6DA"></span>Planificado</span>' : '') +
+    '<span><span class="pace-legend-dot" style="background:#66BB6A"></span>Real ' + (!hasReal ? '(sin datos aún)' : '') + '</span>';
+
+  const title = hasPlanned
+    ? '<i class="fa-solid fa-chart-line"></i> Progreso de pace'
+    : '<i class="fa-solid fa-chart-line"></i> Pace real registrado';
+
   return '<div class="pace-chart-wrap">' +
-    '<div class="pace-chart-title"><i class="fa-solid fa-chart-line"></i> Progreso de pace</div>' +
-    '<div class="pace-chart-legend">' +
-      '<span><span class="pace-legend-dot" style="background:#26C6DA"></span>Planificado</span>' +
-      '<span><span class="pace-legend-dot" style="background:#66BB6A"></span>Real ' + (!hasReal?'(sin datos aún)':'') + '</span>' +
-    '</div>' +
+    '<div class="pace-chart-title">' + title + '</div>' +
+    '<div class="pace-chart-legend">' + legend + '</div>' +
     '<svg class="pace-chart-svg" viewBox="0 0 ' + W + ' ' + H + '">' +
-      yLabels.map(l=>`<line x1="${pL}" y1="${l.y}" x2="${W-pR}" y2="${l.y}" stroke="#263545" stroke-width="1"/><text x="${pL-4}" y="${l.y+3}" text-anchor="end" fill="#607D8B" font-size="9">${l.l}</text>`).join('') +
-      (planPath?`<path d="${planPath}" fill="none" stroke="#26C6DA" stroke-width="2" stroke-dasharray="4,3" opacity=".8"/>`:'') +
-      (realPath?`<path d="${realPath}" fill="none" stroke="#66BB6A" stroke-width="2.5"/>`:'') +
+      yLabels.map(l =>
+        `<line x1="${pL}" y1="${l.y}" x2="${W-pR}" y2="${l.y}" stroke="#263545" stroke-width="1"/>` +
+        `<text x="${pL-4}" y="${l.y+3}" text-anchor="end" fill="#607D8B" font-size="9">${l.l}</text>`
+      ).join('') +
+      (planPath ? `<path d="${planPath}" fill="none" stroke="#26C6DA" stroke-width="2" stroke-dasharray="4,3" opacity=".8"/>` : '') +
+      (realPath ? `<path d="${realPath}" fill="none" stroke="#66BB6A" stroke-width="2.5"/>` : '') +
       dots +
-    '</svg></div>';
+    '</svg>' +
+    (!hasReal ? '<div style="text-align:center;font-size:12px;color:#607D8B;padding:6px 0">Registra tiempos reales en cada sesión para ver tu progreso</div>' : '') +
+  '</div>';
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -3156,7 +3156,7 @@ function markSession(planId, weekNum, dayName, status) {
   row.querySelectorAll('.sbtn-skip').forEach(b => b.classList.toggle('active', newStatus==='skipped'));
   // Update status icon in title
   const scontent = row.querySelector('.scontent');
-  const titleRow = scontent ? scontent.querySelector('div:first-child') : null;
+  const titleRow = scontent ? scontent.querySelector('.stitle-row') : null;
   if (titleRow) {
     titleRow.querySelectorAll('.done-check,.skip-check').forEach(e => e.remove());
     if (newStatus === 'done') {
@@ -3357,7 +3357,7 @@ function renderPlan(plan, fd) {
         <div class="sr ${status}" id="sr_${key}">
           <div class="sd">${s.day.substring(0,3)}<span class="sd-date">${dayDateStr}</span></div>
           <div class="scontent">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <div class="stitle-row" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span class="stype">${s.tipo}</span>
               <span class="badge ${s.badge}">${badgeLabel(s.badge)}</span>
               ${status==='done'?'<span class="done-check"><i class="fa-solid fa-circle-check"></i></span>':''}

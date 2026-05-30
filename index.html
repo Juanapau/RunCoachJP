@@ -866,6 +866,12 @@
         <div class="pn" id="pname">Plan de Entrenamiento</div>
       </div>
       <div class="pm" id="pmeta"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px">
+        <button id="bnotif" onclick="togglePlanNotifications()"
+          style="background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;display:flex;align-items:center;gap:5px">
+          <i class="fa-solid fa-bell-slash"></i><span id="bnotif-txt">Recordatorios</span>
+        </button>
+      </div>
     </div>
     <div id="pcontent"></div>
     <div class="csec" id="csec" style="display:none">
@@ -878,7 +884,7 @@
         <button class="btn bor" style="flex:1" onclick="showProgressSummary()"><i class="fa-solid fa-chart-pie"></i> Mi progreso</button>
         <button class="btn bor" style="flex:1" onclick="exportPlanPDF()"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
       </div>
-      <div style="display:flex;gap:10px;margin-top:0">
+      <div style="display:flex;gap:10px">
         <button class="btn bor bfull" id="bnotif" onclick="togglePlanNotifications()">
           <i class="fa-solid fa-bell"></i> <span id="bnotif-txt">Activar recordatorios</span>
         </button>

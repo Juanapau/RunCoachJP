@@ -868,8 +868,9 @@
       <div class="pm" id="pmeta"></div>
       <div style="display:flex;justify-content:flex-end;margin-top:6px">
         <button id="bnotif" onclick="togglePlanNotifications()"
-          style="background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;display:flex;align-items:center;gap:5px">
-          <i class="fa-solid fa-bell-slash"></i><span id="bnotif-txt">Recordatorios</span>
+          style="background:transparent;border:none;cursor:pointer;padding:4px 8px;border-radius:50%;transition:transform .2s"
+          title="Activar recordatorios">
+          <i id="bnotif-icon" class="fa-solid fa-bell-slash" style="font-size:22px;color:#607D8B;transition:color .3s"></i>
         </button>
       </div>
     </div>
@@ -883,11 +884,6 @@
       <div style="display:flex;gap:10px">
         <button class="btn bor" style="flex:1" onclick="showProgressSummary()"><i class="fa-solid fa-chart-pie"></i> Mi progreso</button>
         <button class="btn bor" style="flex:1" onclick="exportPlanPDF()"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn bor bfull" id="bnotif" onclick="togglePlanNotifications()">
-          <i class="fa-solid fa-bell"></i> <span id="bnotif-txt">Activar recordatorios</span>
-        </button>
       </div>
     </div>
     <div style="text-align:center;margin-top:14px">
@@ -1229,15 +1225,18 @@ async function togglePlanNotifications() {
 }
 
 function updateNotifButton() {
-  const btn = document.getElementById('bnotif');
-  const txt = document.getElementById('bnotif-txt');
-  if (!btn || !txt) return;
+  const icon = document.getElementById('bnotif-icon');
+  if (!icon) return;
   const active = localStorage.getItem('runcoach_notif') === '1' && Notification.permission === 'granted';
-  txt.textContent = active ? 'Recordatorios activos' : 'Activar recordatorios';
-  btn.style.borderColor = active ? 'rgba(39,174,96,.4)' : '';
-  btn.style.color = active ? 'var(--ok)' : '';
-  const icon = btn.querySelector('i');
-  if (icon) icon.className = active ? 'fa-solid fa-bell' : 'fa-solid fa-bell-slash';
+  if (active) {
+    icon.className = 'fa-solid fa-bell';
+    icon.style.color = 'var(--pri)';
+    icon.style.filter = 'drop-shadow(0 0 6px rgba(38,198,218,.6))';
+  } else {
+    icon.className = 'fa-solid fa-bell-slash';
+    icon.style.color = '#607D8B';
+    icon.style.filter = 'none';
+  }
 }
 
 async function enableNotifications() {

@@ -878,6 +878,11 @@
         <button class="btn bor" style="flex:1" onclick="showProgressSummary()"><i class="fa-solid fa-chart-pie"></i> Mi progreso</button>
         <button class="btn bor" style="flex:1" onclick="exportPlanPDF()"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
       </div>
+      <div style="display:flex;gap:10px;margin-top:0">
+        <button class="btn bor bfull" id="bnotif" onclick="togglePlanNotifications()">
+          <i class="fa-solid fa-bell"></i> <span id="bnotif-txt">Activar recordatorios</span>
+        </button>
+      </div>
     </div>
     <div style="text-align:center;margin-top:14px">
       <button class="btn bor" onclick="goHome()"><i class="fa-solid fa-circle-arrow-left"></i> Volver al inicio</button>
@@ -1140,8 +1145,113 @@ function goHome() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  ONBOARDING
+//  PUSH NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const perm = await Notification.requestPermission();
+  return perm === 'granted';
+}
+
+function scheduleTrainingNotifications(plan, formData) {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  const startDate = formData.fechaInicio ? new Date(formData.fechaInicio) : new Date();
+  const now = new Date();
+
+  navigator.serviceWorker.ready.then(sw => {
+    let scheduled = 0;
+    plan.weeks.forEach(w => {
+      w.sessions.forEach(s => {
+        if (s.badge === 'bd') return; // skip rest days
+        const key = getSessKey(w.num, s.day);
+        const dayMap = {'Domingo':0,'Lunes':1,'Martes':2,'Miércoles':3,'Jueves':4,'Viernes':5,'Sábado':6};
+        const targetDay = dayMap[s.day];
+        if (targetDay === undefined) return;
+
+        // Calculate session date
+        const weekStart = new Date(startDate);
+        weekStart.setDate(weekStart.getDate() + (w.num - 1) * 7);
+        const weekStartDay = weekStart.getDay();
+        let diff = targetDay - weekStartDay;
+        if (diff < 0) diff += 7;
+        const sessDate = new Date(weekStart);
+        sessDate.setDate(sessDate.getDate() + diff);
+
+        // Notify at 8pm the day before
+        const notifDate = new Date(sessDate);
+        notifDate.setDate(notifDate.getDate() - 1);
+        notifDate.setHours(20, 0, 0, 0);
+
+        const delay = notifDate.getTime() - now.getTime();
+        if (delay <= 0) return; // already passed
+
+        // Only schedule next 7 days to avoid too many
+        if (delay > 7 * 24 * 60 * 60 * 1000) return;
+
+        const km = parseFloat((s.detail||'').match(/^(\d+(?:\.\d+)?)\s*km/)?.[1] || 0);
+        const title = '🏃 RunCoach — Mañana entrenas';
+        const body = `${s.tipo}${km ? ' · ' + km + ' km' : ''}\n${s.detail.split('·')[1]?.trim() || ''}`;
+
+        sw.active.postMessage({
+          type: 'SCHEDULE_NOTIFICATION',
+          delay,
+          title,
+          body,
+          tag: 'runcoach-' + key,
+        });
+        scheduled++;
+      });
+    });
+    if (scheduled > 0) showSyncStatus('🔔 ' + scheduled + ' recordatorio(s) programado(s)');
+  });
+}
+
+async function togglePlanNotifications() {
+  const active = localStorage.getItem('runcoach_notif') === '1' && Notification.permission === 'granted';
+  if (active) {
+    localStorage.removeItem('runcoach_notif');
+    updateNotifButton();
+    showToast('🔕 Recordatorios desactivados');
+  } else {
+    await enableNotifications();
+    updateNotifButton();
+  }
+}
+
+function updateNotifButton() {
+  const btn = document.getElementById('bnotif');
+  const txt = document.getElementById('bnotif-txt');
+  if (!btn || !txt) return;
+  const active = localStorage.getItem('runcoach_notif') === '1' && Notification.permission === 'granted';
+  txt.textContent = active ? 'Recordatorios activos' : 'Activar recordatorios';
+  btn.style.borderColor = active ? 'rgba(39,174,96,.4)' : '';
+  btn.style.color = active ? 'var(--ok)' : '';
+  const icon = btn.querySelector('i');
+  if (icon) icon.className = active ? 'fa-solid fa-bell' : 'fa-solid fa-bell-slash';
+}
+
+async function enableNotifications() {
+  const granted = await requestNotificationPermission();
+  if (!granted) {
+    showToast('Notificaciones no disponibles en este dispositivo');
+    return false;
+  }
+  localStorage.setItem('runcoach_notif', '1');
+  showToast('🔔 Notificaciones activadas');
+  // Schedule for current plan if available
+  if (planObj && formData) scheduleTrainingNotifications(planObj, formData);
+  return true;
+}
+
+function checkAndScheduleNotifications() {
+  if (localStorage.getItem('runcoach_notif') !== '1') return;
+  if (Notification.permission !== 'granted') return;
+  if (planObj && formData) scheduleTrainingNotifications(planObj, formData);
+}
 function checkFirstTime() {
   const seen = localStorage.getItem('runcoach_onboarding_done');
   if (!seen) showOnboarding();
@@ -3326,6 +3436,11 @@ function renderPlan(plan, fd) {
   document.getElementById('bsave').disabled = false;
   document.getElementById('bsave').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar plan';
   document.getElementById('bsave').style.background = '';
+  // Update notification button state and reschedule
+  setTimeout(() => {
+    updateNotifButton();
+    checkAndScheduleNotifications();
+  }, 100);
 }
 
 function badgeLabel(b) {

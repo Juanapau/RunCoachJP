@@ -71,8 +71,9 @@
       --acc:#C62828; --acc-b:#E53935;
       --ok:#2E7D32; --warn:#E65100;
     }
-    /* Theme toggle button */
-    #theme-toggle{position:fixed;bottom:72px;right:14px;z-index:150;background:var(--card);border:1px solid var(--border);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:all .3s;font-size:18px}
+    /* Theme toggle — inside profile header */
+    #theme-toggle{transition:all .2s}
+    #theme-toggle:active{transform:scale(.9)}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
     body{font-family:'Segoe UI',Nunito,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
@@ -467,9 +468,6 @@
   <button class="nb" id="nb-pro" onclick="goApp('profile')"><i class="fa-solid fa-user"></i><span>Perfil</span></button>
 </nav>
 
-<!-- Theme toggle -->
-<button id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
-
 <!-- ══════════════════════════════════════
      SPLASH — PORTADA
 ══════════════════════════════════════ -->
@@ -837,7 +835,11 @@
 ══════════════════════════════════════ -->
 <div class="screen" id="sc-profile">
   <div class="wrap" style="padding-top:16px">
-    <h2 class="sectit"><i class="fa-solid fa-user-gear"></i> Mi Perfil</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h2 class="sectit" style="margin-bottom:0"><i class="fa-solid fa-user-gear"></i> Mi Perfil</h2>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema"
+        style="background:var(--card);border:1px solid var(--border);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .2s">🌙</button>
+    </div>
     <div class="card mb4" style="background:rgba(38,198,218,.06);border-color:rgba(38,198,218,.2)">
       <div style="font-size:13px;color:var(--muted);line-height:1.6">
         <i class="fa-solid fa-circle-info" style="color:var(--pri)"></i>

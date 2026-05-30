@@ -1,5 +1,5 @@
-// RunCoach SW v2.1
-const CACHE_NAME = 'runcoach-v2.1';
+// RunCoach SW v3.0 — con notificaciones push
+const CACHE_NAME = 'runcoach-v3.0';
 
 const STATIC_CACHE = [
   '/RunCoachJP/icon-192.png',
@@ -8,7 +8,7 @@ const STATIC_CACHE = [
 ];
 
 self.addEventListener('install', e => {
-  console.log('📦 RunCoach SW v2.1');
+  console.log('📦 RunCoach SW v3.0');
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then(c => c.addAll(STATIC_CACHE))
@@ -48,4 +48,32 @@ self.addEventListener('fetch', e => {
 
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+
+  // Schedule notification from app
+  if (e.data && e.data.type === 'SCHEDULE_NOTIFICATION') {
+    const { delay, title, body, tag } = e.data;
+    setTimeout(() => {
+      self.registration.showNotification(title, {
+        body,
+        icon: '/RunCoachJP/icon-192.png',
+        badge: '/RunCoachJP/icon-192.png',
+        tag,
+        vibrate: [200, 100, 200],
+        data: { url: '/RunCoachJP/' }
+      });
+    }, delay);
+  }
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window' }).then(list => {
+      for (const c of list) {
+        if (c.url.includes('/RunCoachJP/') && 'focus' in c) return c.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('/RunCoachJP/');
+    })
+  );
 });

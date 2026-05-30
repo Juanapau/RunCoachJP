@@ -2973,7 +2973,6 @@ function saveRealTime(planId, weekNum, dayName, key, tipo, kmPlan) {
   setRealTimes(planId, times);
   const form = document.getElementById('tform_' + key);
   if (form) form.classList.remove('open');
-  const saved = document.getElementById('tsaved_' + key);
   if (saved) {
     saved.style.display = 'flex';
     saved.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + km + ' km · ' + timeStr + ' · <b>' + pace + ' min/km</b>';
@@ -3012,7 +3011,7 @@ function renderPaceChart(plan, planId) {
     const rs = w.sessions.find(s => s.badge==='bs'||s.badge==='bl'||s.badge==='bi');
     let planned = null;
     if (rs) { const pm = (rs.detail||'').match(/(\d+):(\d+)\s*min\/km/); if (pm) planned = +pm[1]*60 + +pm[2]; }
-    const wt = Object.values(times).filter(t => t.weekNum===w.num && t.paceSec);
+    const wt = Object.values(times).filter(t => +t.weekNum === w.num && t.paceSec);
     const real = wt.length ? Math.round(wt.reduce((s,t)=>s+t.paceSec,0)/wt.length) : null;
     return { num:w.num, planned, real };
   });

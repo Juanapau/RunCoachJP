@@ -62,6 +62,17 @@
       --text:#E8EAED; --muted:#9AA0A6; --border:#2a3a4a;
       --ok:#43A047; --warn:#FFA726; --r:10px;
     }
+    /* Light mode */
+    body.light-mode {
+      --bg:#f0f4f8; --bg2:#e2e8f0; --card:#ffffff; --input:#ffffff;
+      --text:#1a202c; --muted:#718096; --border:#cbd5e0;
+      --pri:#0097A7; --pri-b:#26C6DA; --pri-d:#006064;
+      --sec:#2E7D32; --sec-b:#43A047;
+      --acc:#C62828; --acc-b:#E53935;
+      --ok:#2E7D32; --warn:#E65100;
+    }
+    /* Theme toggle button */
+    #theme-toggle{position:fixed;bottom:72px;right:14px;z-index:150;background:var(--card);border:1px solid var(--border);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:all .3s;font-size:18px}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
     body{font-family:'Segoe UI',Nunito,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
@@ -455,6 +466,9 @@
   <button class="nb" id="nb-his" onclick="goApp('history')"><i class="fa-solid fa-list"></i><span>Mis Planes</span></button>
   <button class="nb" id="nb-pro" onclick="goApp('profile')"><i class="fa-solid fa-user"></i><span>Perfil</span></button>
 </nav>
+
+<!-- Theme toggle -->
+<button id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
 
 <!-- ══════════════════════════════════════
      SPLASH — PORTADA
@@ -1166,8 +1180,26 @@ function goHome() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  WEATHER
+//  THEME — DARK / LIGHT
 // ═══════════════════════════════════════════════════════════
+function initTheme() {
+  const saved = localStorage.getItem('runcoach_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    updateThemeButton(true);
+  }
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('runcoach_theme', isLight ? 'light' : 'dark');
+  updateThemeButton(isLight);
+}
+
+function updateThemeButton(isLight) {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = isLight ? '🌙' : '☀️';
+}
 const OWM_KEY = '1902f5655a80d054a241fbdac6ffb6b2';
 
 function getWeatherIcon(code) {
@@ -1692,6 +1724,7 @@ function closeConfirmModal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   checkFirstTime();
   document.getElementById('confirm-gen-btn').addEventListener('click', () => {
     closeConfirmModal();

@@ -364,7 +364,7 @@
     .stime-form.open{display:flex}
     .stime-inp{flex:1;min-width:90px;background:#0d1f2d;border:1px solid rgba(38,198,218,.25);border-radius:6px;padding:7px 10px;color:#fff;font-size:13px;font-family:'Nunito',sans-serif}
     .stime-inp::placeholder{color:#607D8B}
-    .stime-result{width:100%;font-size:12px;color:var(--ok);font-weight:700;display:none;padding:4px 0}
+    .stime-result{width:100%;font-size:13px;color:var(--ok);font-weight:700;padding:4px 0;min-height:20px}
     .stime-saved{display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.25);border-radius:6px;font-size:12px;color:var(--ok);font-weight:700}
 
     /* pace chart */
@@ -707,7 +707,81 @@
 </div>
 
 <!-- ══════════════════════════════════════
-     CONFIRM MODAL
+     ONBOARDING SCREEN
+══════════════════════════════════════ -->
+<div id="sc-onboarding" style="position:fixed;inset:0;z-index:400;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+
+  <!-- Step 1: Welcome -->
+  <div id="ob-step1">
+    <div style="font-size:80px;color:var(--pri);margin-bottom:8px;filter:drop-shadow(0 0 24px rgba(38,198,218,.4))">
+      <i class="fa-solid fa-person-running"></i>
+    </div>
+    <h1 style="font-family:'Bebas Neue',sans-serif;font-size:56px;color:#fff;line-height:.9;margin-bottom:8px">RunCoach</h1>
+    <p style="font-size:12px;font-weight:700;letter-spacing:.4em;color:var(--pri);text-transform:uppercase;margin-bottom:24px">Tu entrenador de running</p>
+    <p style="font-size:15px;color:var(--muted);line-height:1.7;max-width:300px;margin:0 auto 32px">
+      Planes de entrenamiento 100% personalizados según tu perfil real. Sin internet, sin cuentas, gratis.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px;margin:0 auto">
+      <button class="btn bp bfull" onclick="obStep(2)">
+        <i class="fa-solid fa-circle-plus"></i> Soy nuevo — crear mi perfil
+      </button>
+      <button class="btn bor bfull" onclick="obStep(3)">
+        <i class="fa-solid fa-rotate-left"></i> Ya tengo cuenta — recuperar datos
+      </button>
+    </div>
+    <p style="font-size:11px;color:#607D8B;margin-top:20px">Solo se muestra la primera vez</p>
+  </div>
+
+  <!-- Step 2: New user intro -->
+  <div id="ob-step2" style="display:none;max-width:340px">
+    <div style="font-size:60px;margin-bottom:16px">🎯</div>
+    <h2 style="font-size:24px;color:#fff;margin-bottom:12px">¿Cómo funciona?</h2>
+    <div style="text-align:left;display:flex;flex-direction:column;gap:14px;margin-bottom:28px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <span style="background:var(--pri);color:#000;font-weight:800;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">1</span>
+        <span style="font-size:14px;color:var(--muted);line-height:1.5">Completa tu perfil con tus datos personales y nivel de entrenamiento</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <span style="background:var(--pri);color:#000;font-weight:800;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">2</span>
+        <span style="font-size:14px;color:var(--muted);line-height:1.5">La app genera un plan 100% personalizado para tu distancia y objetivo</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <span style="background:var(--pri);color:#000;font-weight:800;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">3</span>
+        <span style="font-size:14px;color:var(--muted);line-height:1.5">Marca cada sesión como realizada y registra tus tiempos reales</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <span style="background:var(--pri);color:#000;font-weight:800;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">4</span>
+        <span style="font-size:14px;color:var(--muted);line-height:1.5">Tus datos se sincronizan en la nube — nunca los pierdes</span>
+      </div>
+    </div>
+    <button class="btn bp bfull" onclick="finishOnboarding()">
+      <i class="fa-solid fa-rocket"></i> ¡Comenzar!
+    </button>
+  </div>
+
+  <!-- Step 3: Recover account -->
+  <div id="ob-step3" style="display:none;max-width:340px;width:100%">
+    <div style="font-size:60px;margin-bottom:16px">🔑</div>
+    <h2 style="font-size:22px;color:#fff;margin-bottom:8px">Recuperar mi cuenta</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">
+      Ingresa tu ID de corredor para recuperar tu perfil y planes desde la nube.
+    </p>
+    <div style="background:rgba(38,198,218,.06);border:1px solid rgba(38,198,218,.2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:12px;color:var(--muted);text-align:left;line-height:1.7">
+      <i class="fa-solid fa-circle-info" style="color:var(--pri)"></i>
+      Puedes encontrar tu ID en <b>Perfil → Mi ID de corredor</b> desde tu dispositivo anterior.
+    </div>
+    <input type="text" id="ob-corredor-id" class="fc" placeholder="runner-xxxxxxxx-xxxxxxx"
+      style="margin-bottom:12px;font-family:monospace;font-size:13px">
+    <div id="ob-recover-msg" style="font-size:13px;min-height:20px;margin-bottom:12px"></div>
+    <button class="btn bp bfull" onclick="recoverAccount()">
+      <i class="fa-solid fa-cloud-arrow-down"></i> Recuperar datos
+    </button>
+    <button class="btn bor bfull" style="margin-top:10px" onclick="obStep(1)">
+      <i class="fa-solid fa-arrow-left"></i> Volver
+    </button>
+  </div>
+
+</div>
 ══════════════════════════════════════ -->
 <div class="mo" id="modal-confirm-plan">
   <div class="mb" style="max-width:480px">
@@ -732,6 +806,17 @@
         <i class="fa-solid fa-circle-info" style="color:var(--pri)"></i>
         Tu perfil se guarda automáticamente cuando creas un plan. La próxima vez que generes uno, tus datos personales ya estarán precargados.
       </div>
+    </div>
+    <!-- Corredor ID -->
+    <div style="background:var(--card);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">
+        <i class="fa-solid fa-fingerprint" style="color:var(--pri)"></i> Mi ID de corredor
+      </div>
+      <div id="profile-corredor-id" style="font-family:monospace;font-size:12px;color:var(--pri);word-break:break-all;margin-bottom:8px"></div>
+      <div style="font-size:11px;color:#607D8B;margin-bottom:8px">Guarda este ID para recuperar tus datos si cambias de celular.</div>
+      <button class="btn bor bsm" onclick="copyCorredorId()">
+        <i class="fa-solid fa-copy"></i> Copiar ID
+      </button>
     </div>
     <div id="profile-content"></div>
     <div class="mt4">
@@ -1055,8 +1140,137 @@ function goHome() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  PROFILE MANAGEMENT
+//  ONBOARDING
 // ═══════════════════════════════════════════════════════════
+function checkFirstTime() {
+  const seen = localStorage.getItem('runcoach_onboarding_done');
+  if (!seen) showOnboarding();
+}
+
+function showOnboarding() {
+  const ob = document.getElementById('sc-onboarding');
+  ob.style.display = 'flex';
+}
+
+function hideOnboarding() {
+  const ob = document.getElementById('sc-onboarding');
+  ob.style.display = 'none';
+}
+
+function obStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('ob-step' + i).style.display = i === n ? 'block' : 'none';
+  });
+}
+
+function finishOnboarding() {
+  localStorage.setItem('runcoach_onboarding_done', '1');
+  hideOnboarding();
+  showToast('¡Bienvenida a RunCoach! 🏃‍♀️');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ACCOUNT RECOVERY
+// ═══════════════════════════════════════════════════════════
+async function recoverAccount() {
+  const id = document.getElementById('ob-corredor-id').value.trim();
+  const msg = document.getElementById('ob-recover-msg');
+  if (!id) { msg.style.color = 'var(--acc-b)'; msg.textContent = 'Ingresa tu ID de corredor'; return; }
+  msg.style.color = 'var(--pri)'; msg.textContent = '⏳ Buscando tu cuenta...';
+
+  try {
+    // 1. Recover profile
+    const profResp = await dbGet({ action: 'getProfile', corredor_id: id });
+    if (!profResp.ok || !profResp.result) {
+      msg.style.color = 'var(--acc-b)'; msg.textContent = '❌ ID no encontrado. Verifica e intenta de nuevo.'; return;
+    }
+
+    // 2. Set corredor_id in localStorage
+    localStorage.setItem('runcoach_corredor_id', id);
+
+    // 3. Save profile locally
+    const p = profResp.result;
+    const profileData = {
+      nombre: p.nombre, edad: p.edad, sexo: p.sexo,
+      peso: p.peso_kg, estatura: p.estatura_cm,
+      fcReposo: p.fc_reposo, fcMax: p.fc_max,
+      experiencia: p.experiencia, kmSemanales: p.km_semanales,
+      ritmoHabitual: p.ritmo_habitual, distMax: p.dist_max,
+      lesion: p.lesion === 'true' || p.lesion === true,
+      lesionDesc: p.lesion_desc,
+      cirugia: p.cirugia === 'true' || p.cirugia === true,
+      superficie: p.superficie, topografia: p.topografia,
+      gimnasio: p.gimnasio === 'true' || p.gimnasio === true,
+      clima: p.clima, sueno: p.sueno_hrs, estres: p.estres,
+      actividades: p.actividades, alimentacion: p.alimentacion,
+      relojGPS: p.reloj_gps === 'true' || p.reloj_gps === true,
+      monitorFC: p.monitor_fc, apps: p.apps,
+    };
+    localStorage.setItem('runcoach_profile', JSON.stringify(profileData));
+    msg.textContent = '✅ Perfil encontrado. Recuperando planes...';
+
+    // 4. Recover plans
+    const planesResp = await dbGet({ action: 'getPlanes', corredor_id: id });
+    if (planesResp.ok && planesResp.result && planesResp.result.length) {
+      const planes = planesResp.result.map(p => ({
+        id: p.plan_id,
+        nombre: p.nombre_plan,
+        distMeta: p.dist_meta,
+        fechaCreacion: p.fecha_creacion,
+        fechaEditado: p.fecha_editado,
+        totalW: p.total_semanas,
+        perfil: profileData.nombre + ', ' + profileData.edad + ' años',
+        // planObj and formData will be null — plan needs to be regenerated
+        planObj: null,
+        formData: {
+          ...profileData,
+          nombrePlan: p.nombre_plan,
+          distMeta: p.dist_meta,
+          objetivo: p.objetivo,
+          tiempoObj: p.tiempo_obj,
+          paceObj: p.pace_obj,
+          fechaInicio: p.fecha_inicio,
+          fechaCarrera: p.fecha_carrera,
+          semanasDisp: +p.total_semanas,
+          dias: (p.dias_semana||'').split(', ').filter(Boolean),
+          durMax: +p.dur_max_dia,
+          durMaxLargo: +p.dur_max_largo,
+          horario: p.horario,
+        },
+        recovered: true,
+      }));
+      setPlanes(planes);
+      msg.textContent = '✅ ' + planes.length + ' plan(es) recuperado(s). ¡Todo listo!';
+    } else {
+      msg.textContent = '✅ Perfil recuperado. No se encontraron planes guardados.';
+    }
+
+    setTimeout(() => {
+      localStorage.setItem('runcoach_onboarding_done', '1');
+      hideOnboarding();
+      showToast('¡Cuenta recuperada correctamente! 🎉');
+      renderProfileScreen();
+      renderHistory();
+    }, 1500);
+
+  } catch(e) {
+    msg.style.color = 'var(--acc-b)';
+    msg.textContent = '❌ Error de conexión. Verifica tu internet e intenta de nuevo.';
+  }
+}
+
+function copyCorredorId() {
+  const id = getCorredorId();
+  navigator.clipboard.writeText(id).then(() => showToast('ID copiado ✓')).catch(() => {
+    // Fallback for devices without clipboard API
+    const el = document.getElementById('profile-corredor-id');
+    const range = document.createRange();
+    range.selectNode(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    showToast('Selecciona y copia el ID manualmente');
+  });
+}
 function saveProfile(d) {
   // Solo guardar datos PERSONALES del corredor, nunca datos del plan
   const profile = {
@@ -1100,6 +1314,9 @@ function renderProfileScreen() {
   const p = getProfile();
   const c = document.getElementById('profile-content');
   if (!c) return;
+  // Show corredor ID
+  const idEl = document.getElementById('profile-corredor-id');
+  if (idEl) idEl.textContent = getCorredorId();
   if (!p) {
     c.innerHTML = `<div class="empty"><i class="fa-solid fa-user-slash"></i><p>Aún no tienes un perfil guardado.<br>Se guarda automáticamente al crear tu primer plan.</p></div>`;
     renderTimeHistory();
@@ -1220,6 +1437,7 @@ function closeConfirmModal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  checkFirstTime();
   document.getElementById('confirm-gen-btn').addEventListener('click', () => {
     closeConfirmModal();
     formData = collect();
@@ -2441,12 +2659,14 @@ function calcRealPace(key) {
   const km = parseFloat(kmEl.value);
   const timeStr = timEl.value.trim();
   const m = timeStr.match(/(?:(\d+):)?(\d+):(\d+)/);
-  if (!m || !km || km <= 0) { resEl.style.display = 'none'; return; }
+  if (!m || !km || km <= 0) {
+    resEl.textContent = '';
+    return;
+  }
   const totalSec = (+m[1]||0)*3600 + (+m[2])*60 + (+m[3]);
   const paceSec = Math.round(totalSec / km);
   const paceStr = Math.floor(paceSec/60) + ':' + (paceSec%60).toString().padStart(2,'0');
   resEl.textContent = '⚡ Pace real: ' + paceStr + ' min/km';
-  resEl.style.display = 'block';
 }
 
 function saveRealTime(planId, weekNum, dayName, key, tipo, kmPlan) {
@@ -3045,7 +3265,7 @@ function renderPlan(plan, fd) {
             </div>
             ${s.badge !== 'bd' && s.badge !== 'bf' ? `
             <div class="stime-form" id="tform_${key}">
-              <input class="stime-inp" id="tkm_${key}" type="number" placeholder="Km reales" min="0" max="100" step="0.1">
+              <input class="stime-inp" id="tkm_${key}" type="number" placeholder="Km reales" min="0" max="100" step="0.1" oninput="calcRealPace('${key}')">
               <input class="stime-inp" id="ttim_${key}" type="text" placeholder="Tiempo hh:mm:ss" oninput="calcRealPace('${key}')">
               <div class="stime-result" id="tpace_${key}"></div>
               <button class="sbtn" style="background:var(--ok);color:#fff;width:100%" onclick="saveRealTime('${planId}','${w.num}','${s.day}','${key}','${s.tipo.replace(/'/g,'')}',${s.km||0})">

@@ -359,7 +359,28 @@
     .confirm-item{background:var(--bg2);border-radius:8px;padding:10px 12px}
     .confirm-item-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
     .confirm-item-value{font-size:14px;font-weight:700;color:var(--text)}
-    /* progress summary */
+    /* time recording per session */
+    .stime-form{display:none;margin-top:8px;background:#1a2535;border:1px solid rgba(38,198,218,.2);border-radius:8px;padding:12px;gap:8px;flex-wrap:wrap}
+    .stime-form.open{display:flex}
+    .stime-inp{flex:1;min-width:90px;background:#0d1f2d;border:1px solid rgba(38,198,218,.25);border-radius:6px;padding:7px 10px;color:#fff;font-size:13px;font-family:'Nunito',sans-serif}
+    .stime-inp::placeholder{color:#607D8B}
+    .stime-result{width:100%;font-size:12px;color:var(--ok);font-weight:700;display:none;padding:4px 0}
+    .stime-saved{display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.25);border-radius:6px;font-size:12px;color:var(--ok);font-weight:700}
+
+    /* pace chart */
+    .pace-chart-wrap{background:var(--card);border-radius:var(--r);padding:14px;margin-top:16px;border:1px solid var(--border)}
+    .pace-chart-title{font-size:13px;font-weight:700;color:var(--pri);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .pace-chart-legend{display:flex;gap:16px;margin-bottom:10px;font-size:11px}
+    .pace-legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+    .pace-chart-svg{width:100%;overflow:visible}
+
+    /* best times in profile */
+    .best-times-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .best-time-card{background:var(--bg2);border-radius:8px;padding:10px 12px;border:1px solid var(--border)}
+    .best-time-dist{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+    .best-time-val{font-size:20px;font-weight:800;color:var(--pri);font-family:'Bebas Neue',sans-serif}
+    .best-time-pace{font-size:11px;color:var(--muted);margin-top:2px}
+    .best-time-plan{font-size:10px;color:#607D8B;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .psumm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
     .psumm-card{background:var(--bg2);border-radius:10px;padding:14px;text-align:center}
     .psumm-val{font-size:28px;font-weight:800;color:var(--pri);display:block;font-family:'Bebas Neue',sans-serif}
@@ -720,33 +741,15 @@
       <button class="btn bor bsm" onclick="clearProfile()"><i class="fa-solid fa-trash"></i> Borrar perfil guardado</button>
     </div>
 
-    <!-- TIME HISTORY -->
+    <!-- BEST TIMES -->
     <div style="margin-top:24px">
       <h3 style="font-size:16px;font-weight:700;color:var(--pri);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-        <i class="fa-solid fa-clock-rotate-left"></i> Historial de tiempos
+        <i class="fa-solid fa-trophy"></i> Mis mejores tiempos
       </h3>
       <div class="card mb4" style="background:rgba(38,198,218,.06);border-color:rgba(38,198,218,.2)">
-        <div style="font-size:13px;color:var(--muted)">Registra tus mejores tiempos. La app los usará para calcular ritmos más precisos.</div>
+        <div style="font-size:13px;color:var(--muted)">Se actualiza automáticamente con los tiempos reales que registres en cada plan.</div>
       </div>
-      <div id="time-history-list"></div>
-      <div style="margin-top:12px;background:var(--card);border-radius:var(--r);padding:14px;border:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Añadir tiempo</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <select class="fc" id="th-dist" style="flex:1;min-width:100px">
-            <option value="">Distancia</option>
-            <option value="5K">5K</option>
-            <option value="10K">10K</option>
-            <option value="15K">15K</option>
-            <option value="21K">21K (Media)</option>
-            <option value="42K">42K (Maratón)</option>
-          </select>
-          <input type="text" class="fc" id="th-time" placeholder="hh:mm:ss" style="flex:1;min-width:100px">
-          <input type="date" class="fc" id="th-date" style="flex:1;min-width:120px">
-        </div>
-        <button class="btn bp bfull" style="margin-top:10px" onclick="addTimeRecord()">
-          <i class="fa-solid fa-plus"></i> Agregar
-        </button>
-      </div>
+      <div id="best-times-content"></div>
     </div>
   </div>
 </div>
@@ -1146,7 +1149,7 @@ function renderProfileScreen() {
         <div class="profile-field"><span class="profile-field-label">Apps</span><span class="profile-field-value">${esc(p.apps||'Ninguna')}</span></div>
       </div>
     </div>`;
-  renderTimeHistory();
+  renderBestTimes();
 }
 
 function loadProfileIntoWizard() {
@@ -2415,6 +2418,176 @@ function getAlternative(badge) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  REAL TIME RECORDING PER SESSION
+// ═══════════════════════════════════════════════════════════
+function getRealTimes(planId) {
+  try { return JSON.parse(localStorage.getItem('runcoach_realtimes_' + planId) || '{}'); } catch { return {}; }
+}
+function setRealTimes(planId, data) {
+  localStorage.setItem('runcoach_realtimes_' + planId, JSON.stringify(data));
+}
+
+function toggleTimeForm(key) {
+  const f = document.getElementById('tform_' + key);
+  if (f) f.classList.toggle('open');
+}
+
+function calcRealPace(key) {
+  const kmEl  = document.getElementById('tkm_' + key);
+  const timEl = document.getElementById('ttim_' + key);
+  const resEl = document.getElementById('tpace_' + key);
+  if (!kmEl || !timEl || !resEl) return;
+  const km = parseFloat(kmEl.value);
+  const timeStr = timEl.value.trim();
+  const m = timeStr.match(/(?:(\d+):)?(\d+):(\d+)/);
+  if (!m || !km || km <= 0) { resEl.style.display = 'none'; return; }
+  const totalSec = (+m[1]||0)*3600 + (+m[2])*60 + (+m[3]);
+  const paceSec = Math.round(totalSec / km);
+  const paceStr = Math.floor(paceSec/60) + ':' + (paceSec%60).toString().padStart(2,'0');
+  resEl.textContent = '⚡ Pace real: ' + paceStr + ' min/km';
+  resEl.style.display = 'block';
+}
+
+function saveRealTime(planId, weekNum, dayName, key, tipo, kmPlan) {
+  const kmEl  = document.getElementById('tkm_' + key);
+  const timEl = document.getElementById('ttim_' + key);
+  const km = parseFloat(kmEl.value);
+  const timeStr = timEl.value.trim();
+  if (!km || !timeStr) { showToast('Completa km y tiempo'); return; }
+  const m = timeStr.match(/(?:(\d+):)?(\d+):(\d+)/);
+  if (!m) { showToast('Formato: hh:mm:ss o mm:ss'); return; }
+  const totalSec = (+m[1]||0)*3600 + (+m[2])*60 + (+m[3]);
+  const paceSec = Math.round(totalSec / km);
+  const pace = Math.floor(paceSec/60) + ':' + (paceSec%60).toString().padStart(2,'0');
+  const times = getRealTimes(planId);
+  times[key] = { km, time: timeStr, pace, paceSec, tipo, weekNum: +weekNum, dayName, date: new Date().toISOString().slice(0,10) };
+  setRealTimes(planId, times);
+  const form = document.getElementById('tform_' + key);
+  if (form) form.classList.remove('open');
+  const saved = document.getElementById('tsaved_' + key);
+  if (saved) {
+    saved.style.display = 'flex';
+    saved.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + km + ' km · ' + timeStr + ' · <b>' + pace + ' min/km</b>';
+  }
+  syncRealTime(planId, weekNum, dayName, { km, time: timeStr, pace, tipo });
+  showToast('Tiempo guardado ✓');
+}
+
+function getRealTimeDisplay(planId, weekNum, dayName) {
+  const key = getSessKey(weekNum, dayName);
+  const times = getRealTimes(planId);
+  const t = times[key];
+  if (!t) return '<div class="stime-saved" id="tsaved_' + key + '" style="display:none"></div>';
+  return '<div class="stime-saved" id="tsaved_' + key + '">' +
+    '<i class="fa-solid fa-circle-check"></i> ' + t.km + ' km · ' + t.time + ' · <b>' + t.pace + ' min/km</b>' +
+  '</div>';
+}
+
+async function syncRealTime(planId, weekNum, dayName, data) {
+  if (!navigator.onLine) return;
+  await dbPost('saveRealTime', {
+    corredor_id: getCorredorId(), plan_id: planId,
+    semana_num: weekNum, dia_nombre: dayName,
+    km_reales: data.km, tiempo_real: data.time,
+    pace_real: data.pace, tipo: data.tipo,
+    fecha: new Date().toISOString().slice(0,10),
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PACE CHART — planned vs real
+// ═══════════════════════════════════════════════════════════
+function renderPaceChart(plan, planId) {
+  const times = getRealTimes(planId);
+  const weeks = plan.weeks.map(w => {
+    const rs = w.sessions.find(s => s.badge==='bs'||s.badge==='bl'||s.badge==='bi');
+    let planned = null;
+    if (rs) { const pm = (rs.detail||'').match(/(\d+):(\d+)\s*min\/km/); if (pm) planned = +pm[1]*60 + +pm[2]; }
+    const wt = Object.values(times).filter(t => t.weekNum===w.num && t.paceSec);
+    const real = wt.length ? Math.round(wt.reduce((s,t)=>s+t.paceSec,0)/wt.length) : null;
+    return { num:w.num, planned, real };
+  });
+  const hasReal = weeks.some(w=>w.real);
+  const allP = weeks.flatMap(w=>[w.planned,w.real]).filter(Boolean);
+  if (!allP.length) return '';
+  const minP=Math.min(...allP)-10, maxP=Math.max(...allP)+10;
+  const W=340,H=140,pL=45,pB=25,pT=10,pR=10,iW=W-pL-pR,iH=H-pB-pT,n=weeks.length;
+  const xP=i=>pL+(i/Math.max(n-1,1))*iW;
+  const yP=p=>pT+iH-((p-minP)/(maxP-minP))*iH;
+  const fp=s=>Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0');
+  let planPath='',realPath='';
+  weeks.forEach((w,i)=>{ if(w.planned) planPath+=(planPath?'L':'M')+xP(i)+' '+yP(w.planned); });
+  weeks.forEach((w,i)=>{ if(w.real) realPath+=(realPath?'L':'M')+xP(i)+' '+yP(w.real); });
+  const yLabels=[];
+  for(let s=Math.ceil(minP/30)*30;s<=maxP;s+=30) yLabels.push({y:yP(s),l:fp(s)});
+  const dots=weeks.map((w,i)=>{
+    let h='';
+    if(w.planned) h+=`<circle cx="${xP(i)}" cy="${yP(w.planned)}" r="3" fill="#26C6DA"/>`;
+    if(w.real)    h+=`<circle cx="${xP(i)}" cy="${yP(w.real)}" r="3.5" fill="#66BB6A"/>`;
+    if(i%Math.max(1,Math.floor(n/6))===0) h+=`<text x="${xP(i)}" y="${H-8}" text-anchor="middle" fill="#607D8B" font-size="9">S${w.num}</text>`;
+    return h;
+  }).join('');
+  return '<div class="pace-chart-wrap">' +
+    '<div class="pace-chart-title"><i class="fa-solid fa-chart-line"></i> Progreso de pace</div>' +
+    '<div class="pace-chart-legend">' +
+      '<span><span class="pace-legend-dot" style="background:#26C6DA"></span>Planificado</span>' +
+      '<span><span class="pace-legend-dot" style="background:#66BB6A"></span>Real ' + (!hasReal?'(sin datos aún)':'') + '</span>' +
+    '</div>' +
+    '<svg class="pace-chart-svg" viewBox="0 0 ' + W + ' ' + H + '">' +
+      yLabels.map(l=>`<line x1="${pL}" y1="${l.y}" x2="${W-pR}" y2="${l.y}" stroke="#263545" stroke-width="1"/><text x="${pL-4}" y="${l.y+3}" text-anchor="end" fill="#607D8B" font-size="9">${l.l}</text>`).join('') +
+      (planPath?`<path d="${planPath}" fill="none" stroke="#26C6DA" stroke-width="2" stroke-dasharray="4,3" opacity=".8"/>`:'') +
+      (realPath?`<path d="${realPath}" fill="none" stroke="#66BB6A" stroke-width="2.5"/>`:'') +
+      dots +
+    '</svg></div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BEST TIMES IN PROFILE
+// ═══════════════════════════════════════════════════════════
+function getBestTimes() {
+  const planes = getPlanes();
+  const bests = {};
+  planes.forEach(p => {
+    const times = getRealTimes(p.id);
+    const dist = p.formData ? p.formData.distMeta : '';
+    if (!dist) return;
+    Object.values(times).forEach(t => {
+      if (!t.paceSec) return;
+      if (!bests[dist] || t.paceSec < bests[dist].paceSec) {
+        bests[dist] = { pace:t.pace, time:t.time, paceSec:t.paceSec, planName:p.nombre, km:t.km };
+      }
+    });
+  });
+  return bests;
+}
+
+function renderBestTimes() {
+  const c = document.getElementById('best-times-content');
+  if (!c) return;
+  const bests = getBestTimes();
+  const dists = ['5K','10K','15K','21K','42K'];
+  const hasAny = dists.some(d => bests[d]);
+  if (!hasAny) {
+    c.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0">Registra tiempos en tus planes para ver tus mejores marcas aquí.</div>';
+    return;
+  }
+  c.innerHTML = '<div class="best-times-grid">' +
+    dists.map(d => {
+      const b = bests[d];
+      return '<div class="best-time-card">' +
+        '<div class="best-time-dist">' + d + '</div>' +
+        (b
+          ? '<div class="best-time-val">' + b.time + '</div>' +
+            '<div class="best-time-pace">⚡ ' + b.pace + ' min/km</div>' +
+            '<div class="best-time-plan">📋 ' + esc(b.planName) + '</div>'
+          : '<div class="best-time-val" style="color:#607D8B">—</div>' +
+            '<div class="best-time-pace" style="color:#607D8B">Sin registro</div>'
+        ) + '</div>';
+    }).join('') + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
 //  PROGRESS SUMMARY
 // ═══════════════════════════════════════════════════════════
 function showProgressSummary() {
@@ -2830,7 +3003,7 @@ function renderPlan(plan, fd) {
   const basePaceSec = estimatePace(fd);
   const racePaceSec = getRacePaceSec(fd);
 
-  content.innerHTML = countdownHTML + progHTML + plan.weeks.map((w, i) => {
+  content.innerHTML = countdownHTML + progHTML + renderPaceChart(plan, planId) + plan.weeks.map((w, i) => {
     const tag = w.isRaceWeek ? ' 🏆' : w.isTaper ? ' ↓ Tapering' : w.isRecovery ? ' 🔄 Recuperación' : '';
 
     // Week completion indicator
@@ -2865,7 +3038,21 @@ function renderPlan(plan, fd) {
               <button class="sbtn sbtn-info" onclick="toggleNutrition('${key}')">
                 <i class="fa-solid fa-bowl-rice"></i> Nutrición
               </button>
+              ${s.badge !== 'bd' && s.badge !== 'bf' ? `
+              <button class="sbtn" style="background:rgba(39,174,96,.1);color:var(--ok);border:1px solid rgba(39,174,96,.25)" onclick="toggleTimeForm('${key}')">
+                <i class="fa-solid fa-stopwatch"></i> Tiempo real
+              </button>` : ''}
             </div>
+            ${s.badge !== 'bd' && s.badge !== 'bf' ? `
+            <div class="stime-form" id="tform_${key}">
+              <input class="stime-inp" id="tkm_${key}" type="number" placeholder="Km reales" min="0" max="100" step="0.1">
+              <input class="stime-inp" id="ttim_${key}" type="text" placeholder="Tiempo hh:mm:ss" oninput="calcRealPace('${key}')">
+              <div class="stime-result" id="tpace_${key}"></div>
+              <button class="sbtn" style="background:var(--ok);color:#fff;width:100%" onclick="saveRealTime('${planId}','${w.num}','${s.day}','${key}','${s.tipo.replace(/'/g,'')}',${s.km||0})">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar tiempo
+              </button>
+            </div>
+            ${getRealTimeDisplay(planId, w.num, s.day)}` : ''}
             <div class="salt ${status==='skipped'?'open':''}" id="alt_${key}">
               <div class="salt-title"><i class="fa-solid fa-lightbulb"></i> Alternativa sugerida</div>
               ${alt}

@@ -282,13 +282,18 @@
 
     /* progress action buttons */
     .sbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-    .sbtn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
-    .sbtn-done{background:rgba(67,160,71,.15);color:var(--sec-b);border:1px solid rgba(67,160,71,.3)}
-    .sbtn-done:hover,.sbtn-done.active{background:var(--ok);color:#fff;border-color:var(--ok)}
-    .sbtn-skip{background:rgba(239,83,80,.12);color:var(--acc-b);border:1px solid rgba(239,83,80,.25)}
-    .sbtn-skip:hover,.sbtn-skip.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+    .sbtn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;font-family:inherit;transition:background .2s,color .2s,border-color .2s,transform .1s}
+    .sbtn:active{transform:scale(.96)}
+
+    /* Realizado — inactive: transparent green tint, active: solid green */
+    .sbtn-done{background:rgba(67,160,71,.1);color:var(--sec-b);border:1px solid rgba(67,160,71,.25)}
+    .sbtn-done.active{background:var(--ok);color:#fff;border-color:var(--ok);box-shadow:0 2px 8px rgba(39,174,96,.4)}
+
+    /* No realizado — inactive: transparent red tint, active: solid red */
+    .sbtn-skip{background:rgba(239,83,80,.08);color:var(--acc-b);border:1px solid rgba(239,83,80,.2)}
+    .sbtn-skip.active{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:0 2px 8px rgba(239,83,80,.4)}
+
     .sbtn-info{background:rgba(38,198,218,.1);color:var(--pri);border:1px solid rgba(38,198,218,.2)}
-    .sbtn-info:hover{background:rgba(38,198,218,.2)}
 
     /* alternative exercise box */
     .salt{display:none;margin-top:8px;background:rgba(255,167,38,.07);border:1px solid rgba(255,167,38,.2);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.6}

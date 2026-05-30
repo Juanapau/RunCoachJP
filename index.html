@@ -2122,11 +2122,20 @@ function getObjetivoModifiers(d) {
 
 // ─── VOLUME PLANNING ──────────────────────────────────────
 function getRaceDistKm(distMeta) {
+  if (!distMeta) return 10;
   const map = {'5K':5,'10K':10,'15K':15,'21K':21,'42K':42};
+  // Exact match first
   for (const [k,v] of Object.entries(map)) {
-    if (distMeta.includes(k.replace('K','')) || distMeta.includes(k)) return v;
+    if (distMeta === k) return v;
   }
-  // Try to parse custom distance
+  // Partial match — but use word boundary to avoid '5' matching '15'
+  for (const [k,v] of Object.entries(map)) {
+    const num = k.replace('K','');
+    // Match only if the number is followed by K or end of string
+    const re = new RegExp('\\b' + num + 'K?\\b', 'i');
+    if (re.test(distMeta)) return v;
+  }
+  // Last resort: extract first number
   const m = distMeta.match(/(\d+)/);
   return m ? +m[1] : 10;
 }
@@ -2135,57 +2144,91 @@ function getMaxLongRun(raceKm, experiencia, distMaxCompletada) {
   const distMaxKm = {
     'Nunca he corrido formalmente': 3,
     'Menos de 5K': 4,
-    '5K': 5,
-    '10K': 10,
-    '15K': 15,
-    '21K (Media Maratón)': 21,
-    '42K (Maratón)': 42,
+    '5K': 5, '10K': 10, '15K': 15,
+    '21K (Media Maratón)': 21, '42K (Maratón)': 42,
   }[distMaxCompletada] || 5;
 
-  // Hard cap per race distance — ABSOLUTE, never exceeded
-  const raceMaxLong = {
-    5:  4,
-    10: 8,
-    15: 12,
-    21: 18,
-    42: 36,
-  };
-  const key = [5,10,15,21,42].reduce((prev, curr) =>
-    Math.abs(curr - raceKm) < Math.abs(prev - raceKm) ? curr : prev
-  );
-  const hardCap = raceMaxLong[key] || Math.round(raceKm * 0.85);
+  // Dynamic cap: 80-90% of race distance, never more than race distance
+  // Short races (≤10K): can train up to race distance
+  // Medium races (10-21K): train up to 85% of race
+  // Long races (>21K): train up to 80-86% of race
+  let capRatio;
+  if (raceKm <= 10)      capRatio = 0.85;
+  else if (raceKm <= 21) capRatio = 0.86;
+  else if (raceKm <= 30) capRatio = 0.83;
+  else                   capRatio = 0.80;
 
-  // Can't jump more than 40% above current max in one plan
+  // Hard known caps for standard distances
+  const knownCaps = {5:4, 10:8, 15:12, 21:18, 42:36};
+  const knownKey = [5,10,15,21,42].find(k => k === raceKm);
+  const hardCap = knownKey ? knownCaps[knownKey] : Math.round(raceKm * capRatio);
+
+  // Can't jump more than 40% above current max
   const practicalMax = Math.min(hardCap, Math.max(distMaxKm * 1.4, distMaxKm + 4));
-
-  // Return the minimum — hard cap ALWAYS wins
   return Math.min(hardCap, practicalMax);
 }
 
 function getPeakWeeklyVolume(raceKm, experiencia, kmSemanales, totalW) {
-  const racePeak = {
+  // Dynamic calculation for any distance
+  // Base: race distance * multiplier per experience level
+  const expMultiplier = {
+    principiante: 3.2,
+    basico: 4.0,
+    intermedio: 5.0,
+    avanzado: 6.0,
+  }[experiencia] || 4.0;
+
+  // Known calibrated peaks for standard distances
+  const knownPeaks = {
     5:  { principiante:25, basico:35, intermedio:45, avanzado:55 },
     10: { principiante:40, basico:55, intermedio:65, avanzado:80 },
-    15: { principiante:50, basico:65, intermedio:80, avanzado:95 },
+    15: { principiante:48, basico:62, intermedio:75, avanzado:90 },
     21: { principiante:60, basico:75, intermedio:90, avanzado:110 },
     42: { principiante:70, basico:90, intermedio:110, avanzado:130 },
   };
-  const key = [5,10,15,21,42].reduce((prev, curr) =>
+
+  // Find nearest known distance for calibration
+  const knownDists = [5,10,15,21,42];
+  const nearest = knownDists.reduce((prev, curr) =>
     Math.abs(curr - raceKm) < Math.abs(prev - raceKm) ? curr : prev
   );
-  const targetPeak = (racePeak[key] || racePeak[10])[experiencia] || 60;
+
+  let targetPeak;
+  if (knownPeaks[nearest] && Math.abs(nearest - raceKm) <= 2) {
+    // Use exact known value for standard distances
+    targetPeak = knownPeaks[nearest][experiencia] || 60;
+  } else {
+    // Interpolate between nearest known distances
+    const lower = knownDists.filter(d => d <= raceKm).pop() || 5;
+    const upper = knownDists.filter(d => d >= raceKm)[0] || 42;
+    if (lower === upper) {
+      targetPeak = (knownPeaks[lower] || knownPeaks[10])[experiencia] || 60;
+    } else {
+      const ratio = (raceKm - lower) / (upper - lower);
+      const lowerPeak = (knownPeaks[lower] || knownPeaks[10])[experiencia] || 60;
+      const upperPeak = (knownPeaks[upper] || knownPeaks[42])[experiencia] || 90;
+      targetPeak = Math.round(lowerPeak + (upperPeak - lowerPeak) * ratio);
+    }
+  }
+
   const safePeak = Math.max(kmSemanales * 1.6, kmSemanales + totalW * 1.5);
   return Math.min(targetPeak, Math.max(safePeak, kmSemanales + 8));
 }
 
 function planWeeks(d) {
   const defWeeks = {principiante:8, basico:10, intermedio:12, avanzado:16};
-  const metaWeeks = {'5K':8,'10K':10,'15K':12,'21K':16,'42K':20};
+  // Dynamic weeks based on distance: ~1 week per km for short, less for long
+  const raceKmLocal = getRaceDistKm(d.distMeta);
+  const autoWeeks = raceKmLocal <= 5  ? 8  :
+                    raceKmLocal <= 10 ? 10 :
+                    raceKmLocal <= 15 ? 12 :
+                    raceKmLocal <= 21 ? 16 :
+                    raceKmLocal <= 30 ? 18 :
+                    raceKmLocal <= 35 ? 19 : 20;
 
   let totalW = d.semanasDisp;
   if (!totalW) {
-    const key = Object.keys(metaWeeks).find(k => d.distMeta.includes(k.replace('K','')));
-    totalW = (key ? metaWeeks[key] : defWeeks[d.experiencia]) || 12;
+    totalW = autoWeeks || defWeeks[d.experiencia] || 12;
   }
   totalW = Math.max(4, Math.min(totalW, 28));
 

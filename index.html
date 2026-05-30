@@ -3142,16 +3142,16 @@ function markSession(planId, weekNum, dayName, status) {
   // Toggle off if clicking same status
   const prev = prog[key];
   prog[key] = prev === status ? '' : status;
+  const newStatus = prog[key];
   setProgress(planId, prog);
   updateProgressBar(planId);
   syncMarkSession(planId, weekNum, dayName, newStatus); // sync to Sheets
-  const newStatus = prog[key];
   const row = document.getElementById('sr_' + key);
   if (!row) return;
   row.classList.remove('done','skipped');
   if (newStatus === 'done') row.classList.add('done');
   if (newStatus === 'skipped') row.classList.add('skipped');
-  // Update buttons
+  // Update buttons — remove active from both first, then set correct one
   row.querySelectorAll('.sbtn-done').forEach(b => b.classList.toggle('active', newStatus==='done'));
   row.querySelectorAll('.sbtn-skip').forEach(b => b.classList.toggle('active', newStatus==='skipped'));
   // Update status icon in title

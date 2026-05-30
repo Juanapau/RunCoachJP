@@ -990,7 +990,7 @@ function showSyncStatus(msg, ok = true) {
   el.textContent = msg;
   el.style.opacity = '1';
   clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 5000);
 }
 
 // ── SYNC: PERFIL ──────────────────────────────────────────
@@ -1201,16 +1201,32 @@ async function loadWeather() {
   if (!navigator.onLine) { el.style.display = 'none'; return; }
 
   try {
-    // Get location
-    const pos = await new Promise((res, rej) =>
-      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
-    );
-    const { latitude: lat, longitude: lon } = pos.coords;
+    let lat, lon;
+
+    // Try GPS first, fall back to IP-based location
+    try {
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 6000 })
+      );
+      lat = pos.coords.latitude;
+      lon = pos.coords.longitude;
+    } catch(geoErr) {
+      // Fallback: use IP-based location
+      try {
+        const ipResp = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResp.json();
+        lat = ipData.latitude;
+        lon = ipData.longitude;
+      } catch {
+        // Last resort: use Santo Domingo coordinates
+        lat = 18.4861; lon = -69.9312;
+      }
+    }
 
     const resp = await fetch(
       `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OWM_KEY}&units=metric&lang=es`
     );
-    if (!resp.ok) throw new Error('Weather API error');
+    if (!resp.ok) throw new Error('Weather API error ' + resp.status);
     const data = await resp.json();
 
     const icon = getWeatherIcon(data.weather[0].id);
@@ -1218,15 +1234,14 @@ async function loadWeather() {
     const feels = Math.round(data.main.feels_like);
     const desc = data.weather[0].description;
     const humidity = data.main.humidity;
-    const wind = Math.round(data.wind.speed * 3.6); // m/s to km/h
+    const wind = Math.round(data.wind.speed * 3.6);
     const city = data.name;
     const alert = getWeatherAlert(data);
 
-    // Alert banner
     const alertEl = document.getElementById('weather-alert');
     if (alertEl) {
       if (alert) {
-        alertEl.textContent = alert;
+        alertEl.innerHTML = alert;
         alertEl.style.display = 'flex';
       } else {
         alertEl.style.display = 'none';
@@ -1249,17 +1264,23 @@ async function loadWeather() {
       '</div>';
 
     el.style.display = 'flex';
-
-    // Cache for 30 min
     localStorage.setItem('runcoach_weather', JSON.stringify({ data, ts: Date.now() }));
 
   } catch(e) {
-    // Try cached weather
+    console.warn('Weather error:', e);
+    // Try to show cached weather
     try {
       const cached = JSON.parse(localStorage.getItem('runcoach_weather') || 'null');
       if (cached && Date.now() - cached.ts < 3600000) {
-        // Use cached — just don't show if too old
-        el.style.display = 'none';
+        const data = cached.data;
+        const icon = getWeatherIcon(data.weather[0].id);
+        el.innerHTML =
+          '<div class="weather-main">' +
+            '<div class="weather-icon">' + icon + '</div>' +
+            '<div><div class="weather-temp">' + Math.round(data.main.temp) + '°C</div>' +
+            '<div class="weather-desc">' + data.weather[0].description + ' (caché)</div></div>' +
+          '</div>';
+        el.style.display = 'flex';
       } else {
         el.style.display = 'none';
       }
@@ -1325,7 +1346,7 @@ function scheduleTrainingNotifications(plan, formData) {
         scheduled++;
       });
     });
-    if (scheduled > 0) showSyncStatus('🔔 ' + scheduled + ' recordatorio(s) programado(s)');
+    if (scheduled > 0) showSyncStatus('🔔 ' + scheduled + ' recordatorio(s) programado(s) para los próximos días', true);
   });
 }
 

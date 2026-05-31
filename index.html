@@ -528,7 +528,7 @@
       <div class="sh"><div class="si"><i class="fa-solid fa-user"></i></div><div><div class="st">Perfil físico básico</div><div class="ss">Cuéntanos sobre ti</div></div></div>
       <div class="fg"><label class="fl">Nombre *</label><input type="text" class="fc" id="f1" placeholder="Tu nombre" autocomplete="given-name"><div class="ferr" id="e1">Por favor ingresa tu nombre</div></div>
       <div class="fg"><label class="fl">Edad *</label><input type="number" class="fc" id="f2" placeholder="Ej: 35" min="10" max="80"><div class="ferr" id="e2">Edad entre 10 y 80 años</div></div>
-      <div class="fg"><label class="fl">Sexo biológico *</label><select class="fc" id="f3"><option value="">Seleccionar...</option><option>Masculino</option><option>Femenino</option></select><div class="ferr" id="e3">Selecciona una opción</div></div>
+      <div class="fg"><label class="fl">Sexo biológico *</label><select class="fc" id="f3"><option value="">Seleccionar...</option><option value="Masculino">Masculino</option><option value="Femenino">Femenino</option><option value="Otro">Otro</option></select><div class="ferr" id="e3">Selecciona una opción</div></div>
       <div class="fg"><label class="fl">Peso (kg) *</label><input type="number" class="fc" id="f4" placeholder="Ej: 68" min="30" max="200"><div class="ferr" id="e4">Por favor ingresa tu peso</div></div>
       <div class="fg"><label class="fl">Estatura (cm) *</label><input type="number" class="fc" id="f5" placeholder="Ej: 168" min="100" max="230"><div class="ferr" id="e5">Por favor ingresa tu estatura</div></div>
       <div class="fg"><label class="fl">FC en reposo (bpm)</label><input type="number" class="fc" id="f6" placeholder="Ej: 58"><div class="fhint">Opcional — pulsa 60 seg al despertar</div></div>
@@ -558,9 +558,9 @@
       <div class="fg" id="otra-wrap" style="display:none"><label class="fl">Especifica la distancia</label><input type="text" class="fc" id="f13b" placeholder="Ej: 50K trail"></div>
       <div class="fg"><label class="fl">Objetivo principal *</label>
         <div class="rg" id="rg-obj">
-          <label class="ro" onclick="selR(this,'rg-obj','terminar'); toggleObjExtra()"><input type="radio"><i class="fa-solid fa-flag-checkered tr"></i> Solo terminar</label>
-          <label class="ro" onclick="selR(this,'rg-obj','tiempo'); toggleObjExtra()"><input type="radio"><i class="fa-solid fa-stopwatch tr"></i> Tiempo específico</label>
-          <label class="ro" onclick="selR(this,'rg-obj','pace'); toggleObjExtra()"><input type="radio"><i class="fa-solid fa-gauge-high tr"></i> Pace objetivo</label>
+          <label class="ro" onclick="selR(this,'rg-obj','terminar'); toggleObjExtra()"><i class="fa-solid fa-flag-checkered tr"></i> Solo terminar</label>
+          <label class="ro" onclick="selR(this,'rg-obj','tiempo'); toggleObjExtra()"><i class="fa-solid fa-stopwatch tr"></i> Tiempo específico</label>
+          <label class="ro" onclick="selR(this,'rg-obj','pace'); toggleObjExtra()"><i class="fa-solid fa-gauge-high tr"></i> Pace objetivo</label>
         </div>
         <div class="ferr" id="e-obj">Selecciona tu objetivo</div></div>
       <div class="fg" id="tobj-wrap" style="display:none">
@@ -633,10 +633,10 @@
       </div>
       <div class="fg"><label class="fl">Horario preferido *</label>
         <div class="rg" id="rg-hor">
-          <label class="ro" onclick="selR(this,'rg-hor','Mañana')"><input type="radio">🌅 Mañana</label>
-          <label class="ro" onclick="selR(this,'rg-hor','Tarde')"><input type="radio">☀️ Tarde</label>
-          <label class="ro" onclick="selR(this,'rg-hor','Noche')"><input type="radio">🌙 Noche</label>
-          <label class="ro" onclick="selR(this,'rg-hor','Indiferente')"><input type="radio">🔄 Indiferente</label>
+          <label class="ro" onclick="selR(this,'rg-hor','Mañana')">🌅 Mañana</label>
+          <label class="ro" onclick="selR(this,'rg-hor','Tarde')">☀️ Tarde</label>
+          <label class="ro" onclick="selR(this,'rg-hor','Noche')">🌙 Noche</label>
+          <label class="ro" onclick="selR(this,'rg-hor','Indiferente')">🔄 Indiferente</label>
         </div>
         <div class="ferr" id="e-hor">Selecciona un horario</div></div>
     </div>
@@ -646,15 +646,15 @@
       <div class="sh"><div class="si"><i class="fa-solid fa-heart-pulse"></i></div><div><div class="st">Salud y lesiones</div><div class="ss">Tu bienestar es lo primero</div></div></div>
       <div class="wbox mb4"><i class="fa-solid fa-triangle-exclamation"></i><span>RunCoach IA no reemplaza la evaluación de un médico deportivo. Consulta a un profesional antes de comenzar.</span></div>
       <div class="fg"><label class="fl">¿Tienes alguna lesión actual o crónica? *</label>
-        <div class="rg" id="rg-les"><label class="ro" onclick="selR(this,'rg-les','si'); togLes()"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-les','no'); togLes()"><input type="radio">No</label></div>
+        <div class="rg" id="rg-les"><label class="ro" onclick="selR(this,'rg-les','si'); togLes()">Sí</label><label class="ro" onclick="selR(this,'rg-les','no'); togLes()">No</label></div>
         <div class="ferr" id="e-les">Selecciona una opción</div></div>
       <div class="fg" id="les-det" style="display:none"><label class="fl">Describe la lesión</label><input type="text" class="fc" id="f17" placeholder="Ej: Tendinitis aquilea crónica"></div>
       <div class="fg"><label class="fl">¿Has tenido cirugías relacionadas con el movimiento? *</label>
-        <div class="rg" id="rg-cir"><label class="ro" onclick="selR(this,'rg-cir','si'); togCir()"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-cir','no'); togCir()"><input type="radio">No</label></div>
+        <div class="rg" id="rg-cir"><label class="ro" onclick="selR(this,'rg-cir','si'); togCir()">Sí</label><label class="ro" onclick="selR(this,'rg-cir','no'); togCir()">No</label></div>
         <div class="ferr" id="e-cir">Selecciona una opción</div></div>
       <div class="fg" id="cir-det" style="display:none"><label class="fl">Describe la cirugía</label><input type="text" class="fc" id="f18" placeholder="Ej: Meniscectomía rodilla izq. (2022)"></div>
       <div class="fg"><label class="fl">¿Tienes autorización médica para entrenar? *</label>
-        <div class="rg" id="rg-aut"><label class="ro" onclick="selR(this,'rg-aut','si')"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-aut','no')"><input type="radio">No</label><label class="ro" onclick="selR(this,'rg-aut','nc')"><input type="radio">No he consultado</label></div>
+        <div class="rg" id="rg-aut"><label class="ro" onclick="selR(this,'rg-aut','si')">Sí</label><label class="ro" onclick="selR(this,'rg-aut','no')">No</label><label class="ro" onclick="selR(this,'rg-aut','nc')">No he consultado</label></div>
         <div class="ferr" id="e-aut">Selecciona una opción</div></div>
     </div>
 
@@ -670,10 +670,10 @@
           <label class="co" onclick="event.preventDefault();togC(this)"><input type="checkbox">🔄 Mixto</label>
         </div></div>
       <div class="fg"><label class="fl">Topografía de tu zona *</label>
-        <div class="rg" id="rg-top"><label class="ro" onclick="selR(this,'rg-top','plano')"><input type="radio">⬛ Plano</label><label class="ro" onclick="selR(this,'rg-top','ondulado')"><input type="radio">〰️ Ondulado</label><label class="ro" onclick="selR(this,'rg-top','montañoso')"><input type="radio">⛰️ Montañoso</label></div>
+        <div class="rg" id="rg-top"><label class="ro" onclick="selR(this,'rg-top','plano')">⬛ Plano</label><label class="ro" onclick="selR(this,'rg-top','ondulado')">〰️ Ondulado</label><label class="ro" onclick="selR(this,'rg-top','montañoso')">⛰️ Montañoso</label></div>
         <div class="ferr" id="e-top">Selecciona la topografía</div></div>
       <div class="fg"><label class="fl">¿Tienes acceso a gimnasio? *</label>
-        <div class="rg" id="rg-gym"><label class="ro" onclick="selR(this,'rg-gym','si')"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-gym','no')"><input type="radio">No</label></div>
+        <div class="rg" id="rg-gym"><label class="ro" onclick="selR(this,'rg-gym','si')">Sí</label><label class="ro" onclick="selR(this,'rg-gym','no')">No</label></div>
         <div class="ferr" id="e-gym">Selecciona una opción</div></div>
       <div class="fg"><label class="fl">Clima habitual *</label>
         <select class="fc" id="f19"><option value="">Seleccionar...</option><option value="caluroso">Tropical / Caluroso</option><option value="templado">Templado</option><option value="frio">Frío</option><option value="variable">Variable</option></select>
@@ -686,7 +686,7 @@
       <div class="fg"><label class="fl">Horas de sueño por noche</label>
         <div class="sw" style="padding-top:28px"><span class="sv" id="sv">7 hrs</span><input type="range" min="4" max="10" value="7" id="f20" oninput="document.getElementById('sv').textContent=this.value+' hrs'"></div></div>
       <div class="fg"><label class="fl">Nivel de estrés general *</label>
-        <div class="rg" id="rg-est"><label class="ro" onclick="selR(this,'rg-est','bajo')"><input type="radio">😌 Bajo</label><label class="ro" onclick="selR(this,'rg-est','medio')"><input type="radio">😐 Medio</label><label class="ro" onclick="selR(this,'rg-est','alto')"><input type="radio">😰 Alto</label></div>
+        <div class="rg" id="rg-est"><label class="ro" onclick="selR(this,'rg-est','bajo')">😌 Bajo</label><label class="ro" onclick="selR(this,'rg-est','medio')">😐 Medio</label><label class="ro" onclick="selR(this,'rg-est','alto')">😰 Alto</label></div>
         <div class="ferr" id="e-est">Selecciona tu nivel de estrés</div></div>
       <div class="fg"><label class="fl">Otras actividades físicas</label>
         <div class="fhint" style="margin-bottom:8px">Puedes seleccionar todas las que practiques</div>
@@ -710,10 +710,10 @@
     <div class="wstep" id="ws8" style="display:none">
       <div class="sh"><div class="si"><i class="fa-solid fa-watch"></i></div><div><div class="st">Tecnología y nombre del plan</div><div class="ss">Últimos detalles</div></div></div>
       <div class="fg"><label class="fl">¿Tienes reloj GPS? *</label>
-        <div class="rg" id="rg-rel"><label class="ro" onclick="selR(this,'rg-rel','si')"><input type="radio">Sí</label><label class="ro" onclick="selR(this,'rg-rel','no')"><input type="radio">No</label></div>
+        <div class="rg" id="rg-rel"><label class="ro" onclick="selR(this,'rg-rel','si')">Sí</label><label class="ro" onclick="selR(this,'rg-rel','no')">No</label></div>
         <div class="ferr" id="e-rel">Selecciona una opción</div></div>
       <div class="fg"><label class="fl">¿Usas monitor de FC? *</label>
-        <div class="rg" id="rg-mfc"><label class="ro" onclick="selR(this,'rg-mfc','muñeca')"><input type="radio">⌚ Muñeca</label><label class="ro" onclick="selR(this,'rg-mfc','pecho')"><input type="radio">💓 Pecho</label><label class="ro" onclick="selR(this,'rg-mfc','no')"><input type="radio">No uso</label></div>
+        <div class="rg" id="rg-mfc"><label class="ro" onclick="selR(this,'rg-mfc','muñeca')">⌚ Muñeca</label><label class="ro" onclick="selR(this,'rg-mfc','pecho')">💓 Pecho</label><label class="ro" onclick="selR(this,'rg-mfc','no')">No uso</label></div>
         <div class="ferr" id="e-mfc">Selecciona una opción</div></div>
       <div class="fg"><label class="fl">Apps que usas</label>
         <div class="cg" id="cg-apps">

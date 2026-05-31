@@ -3588,14 +3588,17 @@ function renderPlan(plan, fd) {
   const raceDate = parseLocalDate(fd.fechaCarrera);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const daysToRace = raceDate ? Math.round((raceDate - today) / 86400000) : null;
+  // Count from plan start if it hasn't started yet, otherwise from today
+  const countFrom = (startDate && startDate > today) ? startDate : today;
+  const daysToRace = raceDate ? Math.round((raceDate - countFrom) / 86400000) : null;
+  const planStarted = !startDate || startDate <= today;
 
   const countdownHTML = daysToRace !== null ? `
     <div class="countdown-wrap">
       <div>
         <div class="countdown-label"><i class="fa-solid fa-flag-checkered"></i> Faltan</div>
         <div class="countdown-days">${daysToRace > 0 ? daysToRace : '🏆'} ${daysToRace > 0 ? 'días' : 'ES HOY'}</div>
-        <div class="countdown-sub">para tu carrera</div>
+        <div class="countdown-sub">${planStarted ? 'días para tu carrera' : 'días de entrenamiento'}</div>
       </div>
       <div style="text-align:right">
         <div class="countdown-label">Fecha carrera</div>

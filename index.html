@@ -75,7 +75,7 @@
     #theme-toggle{transition:all .2s}
     #theme-toggle:active{transform:scale(.9)}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth}
+    html{scroll-behavior:smooth;touch-action:manipulation}
     body{font-family:'Segoe UI',Nunito,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
     h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em}
 
@@ -733,8 +733,8 @@
 
     <div class="snav">
       <button class="btn bo" id="bprev" onclick="prevStep()" style="display:none"><i class="fa-solid fa-circle-arrow-left"></i> Anterior</button>
-      <button class="btn bp" id="bnext" onclick="nextStep()">Siguiente <i class="fa-solid fa-circle-arrow-right"></i></button>
-      <button class="btn bfull bp" id="bgen" onclick="buildPlan()" style="display:none"><i class="fa-solid fa-dumbbell"></i> Generar mi plan</button>
+      <button class="btn bp" id="bnext" onclick="nextStep()" ontouchstart="">Siguiente <i class="fa-solid fa-circle-arrow-right"></i></button>
+      <button class="btn bfull bp" id="bgen" onclick="buildPlan()" ontouchstart="" style="display:none"><i class="fa-solid fa-dumbbell"></i> Generar mi plan</button>
     </div>
   </div>
 </div>
@@ -1800,12 +1800,15 @@ function renderStep(s) {
   if (s === STEPS) updRes();
 }
 function nextStep() {
+  // Blur any active input first (dismisses keyboard on mobile)
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
   if (valStep(cStep)) {
     cStep++;
     renderStep(cStep);
     window.scrollTo(0, 0);
   } else {
-    // Scroll to first error
     const firstErr = document.querySelector('.ferr.on, .ro-err.on');
     if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }

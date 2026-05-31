@@ -3556,7 +3556,10 @@ function renderPlan(plan, fd) {
   const startDate = fd.fechaInicio ? new Date(fd.fechaInicio) : new Date();
   const raceDate = fd.fechaCarrera ? new Date(fd.fechaCarrera) : null;
   const today = new Date();
-  const daysToRace = raceDate ? Math.ceil((raceDate - today) / 86400000) : null;
+  // Normalize both to midnight to avoid time-of-day affecting the count
+  today.setHours(0, 0, 0, 0);
+  if (raceDate) raceDate.setHours(0, 0, 0, 0);
+  const daysToRace = raceDate ? Math.round((raceDate - today) / 86400000) : null;
 
   const countdownHTML = daysToRace !== null ? `
     <div class="countdown-wrap">

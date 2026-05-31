@@ -1706,18 +1706,12 @@ async function recoverAccount() {
         msg.textContent = '✅ Progreso restaurado. Recuperando tiempos reales...';
       }
 
-      // 5. Restore real times per plan
+      // 5. Restore real times per plan — tiempos is now { plan_id: { key: timeObj } }
       if (tiempos && Object.keys(tiempos).length) {
-        // Group times by plan_id
-        const timesByPlan = {};
-        Object.entries(tiempos).forEach(([, t]) => {
-          if (!t.plan_id) return;
-          if (!timesByPlan[t.plan_id]) timesByPlan[t.plan_id] = {};
-          const key = getSessKey(t.weekNum, t.dayName);
-          timesByPlan[t.plan_id][key] = t;
-        });
-        Object.entries(timesByPlan).forEach(([planId, times]) => {
-          setRealTimes(planId, times);
+        Object.entries(tiempos).forEach(([planId, planTimes]) => {
+          if (planTimes && Object.keys(planTimes).length) {
+            setRealTimes(planId, planTimes);
+          }
         });
         msg.textContent = '✅ Todo recuperado correctamente. ¡Listo!';
       } else {

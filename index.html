@@ -3548,25 +3548,41 @@ function renderPlan(plan, fd) {
     }</div>
     <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${plan.totalW} semanas</div>
     <div class="pmi"><i class="fa-solid fa-calendar-week"></i>${fd.dias.length} días/sem</div>
-    ${fd.fechaInicio ? `<div class="pmi"><i class="fa-solid fa-play"></i>Inicio: ${fd.fechaInicio}</div>` : ''}
-    ${fd.fechaCarrera ? `<div class="pmi"><i class="fa-solid fa-flag-checkered"></i>Carrera: ${fd.fechaCarrera}</div>` : ''}
+    ${fd.fechaInicio ? `<div class="pmi"><i class="fa-solid fa-play"></i>Inicio: ${fmtDate(fd.fechaInicio)}</div>` : ''}
+    ${fd.fechaCarrera ? `<div class="pmi"><i class="fa-solid fa-flag-checkered"></i>Carrera: ${fmtDate(fd.fechaCarrera)}</div>` : ''}
   `;
 
   // ── Countdown ─────────────────────────────────────────────
   // Parse dates as local time (avoid UTC timezone offset issues)
   function parseLocalDate(str) {
     if (!str) return null;
-    // Handle both YYYY-MM-DD and DD/MM/YYYY formats
+    // Extract just the date part from any format:
+    // YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS.sssZ, DD/MM/YYYY
     let y, m, d;
-    if (str.includes('-')) {
-      [y, m, d] = str.split('-').map(Number);
-    } else if (str.includes('/')) {
-      [d, m, y] = str.split('/').map(Number);
-    } else {
-      return null;
+    if (typeof str === 'object' && str instanceof Date) {
+      return new Date(str.getFullYear(), str.getMonth(), str.getDate());
     }
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
+    str = String(str);
+    // ISO format: 2026-11-29T04:00:00.000Z — extract date part only
+    const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      [, y, m, d] = isoMatch.map(Number);
+      return new Date(y, m - 1, d);
+    }
+    // DD/MM/YYYY
+    const dmyMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (dmyMatch) {
+      [, d, m, y] = dmyMatch.map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return null;
+  }
+
+  // Helper to format date nicely for display
+  function fmtDate(str) {
+    const d = parseLocalDate(str);
+    if (!d) return str;
+    return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
   }
   const startDate = fd.fechaInicio ? parseLocalDate(fd.fechaInicio) : new Date();
   const raceDate = parseLocalDate(fd.fechaCarrera);
@@ -3583,8 +3599,8 @@ function renderPlan(plan, fd) {
       </div>
       <div style="text-align:right">
         <div class="countdown-label">Fecha carrera</div>
-        <div class="countdown-race">${fd.fechaCarrera}</div>
-        ${fd.fechaInicio ? '<div class="countdown-label" style="margin-top:6px">Inicio plan</div><div class="countdown-race">' + fd.fechaInicio + '</div>' : ''}
+        <div class="countdown-race">${fmtDate(fd.fechaCarrera)}</div>
+        ${fd.fechaInicio ? '<div class="countdown-label" style="margin-top:6px">Inicio plan</div><div class="countdown-race">' + fmtDate(fd.fechaInicio) + '</div>' : ''}
       </div>
     </div>` : '';
 

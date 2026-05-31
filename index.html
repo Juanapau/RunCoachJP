@@ -3255,6 +3255,7 @@ function saveRealTime(planId, weekNum, dayName, key, tipo, kmPlan) {
   setRealTimes(planId, times);
   const form = document.getElementById('tform_' + key);
   if (form) form.classList.remove('open');
+  const saved = document.getElementById('tsaved_' + key);
   if (saved) {
     saved.style.display = 'flex';
     saved.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + km + ' km · ' + timeStr + ' · <b>' + pace + ' min/km</b>';

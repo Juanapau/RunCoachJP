@@ -432,6 +432,24 @@
     .th-date{font-size:11px;color:#607D8B}
     .th-del{background:none;border:none;color:#ef5350;font-size:14px;cursor:pointer;padding:4px 8px}
 
+    /* HR zones */
+    .hrz-wrap{background:var(--bg2);border-radius:8px;padding:10px 12px;margin-top:8px;border:1px solid var(--border)}
+    .hrz-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .hrz-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px}
+    .hrz-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .hrz-label{font-weight:700;min-width:52px;color:var(--text)}
+    .hrz-range{color:var(--pri);min-width:72px;font-weight:600}
+    .hrz-desc{color:#607D8B;font-size:11px}
+    /* load analysis */
+    .load-wrap{background:var(--card);border-radius:var(--r);padding:14px;margin-top:12px;border:1px solid var(--border)}
+    .load-title{font-size:13px;font-weight:700;color:var(--pri);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+    .load-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .load-card{background:var(--bg2);border-radius:8px;padding:10px;text-align:center}
+    .load-val{font-size:24px;font-weight:800;font-family:'Bebas Neue',sans-serif}
+    .load-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+    .load-bar-bg{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:8px 0 4px}
+    .load-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+    .load-status{font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;text-align:center}
     /* utils */
     .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
     .tr{color:var(--pri)} .tm{color:var(--muted)} .tsm{font-size:13px}
@@ -875,6 +893,14 @@
       </div>
       <div id="best-times-content"></div>
     </div>
+
+    <!-- HR ZONES -->
+    <div style="margin-top:24px">
+      <h3 style="font-size:16px;font-weight:700;color:var(--acc);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-heart-pulse"></i> Mis zonas de FC
+      </h3>
+      <div id="hr-zones-content"></div>
+    </div>
   </div>
 </div>
 <div class="screen" id="sc-loading">
@@ -1179,6 +1205,139 @@ function goHome() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   ['ini','new','his','pro'].forEach(k => document.getElementById('nb-'+k) && document.getElementById('nb-'+k).classList.remove('act'));
   document.getElementById('nb-ini').classList.add('act');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HEART RATE ZONES
+// ═══════════════════════════════════════════════════════════
+const HR_ZONES = [
+  { z:1, name:'Zona 1', pctLo:50, pctHi:60, color:'#4FC3F7', desc:'Recuperación activa' },
+  { z:2, name:'Zona 2', pctLo:60, pctHi:70, color:'#81C784', desc:'Base aeróbica' },
+  { z:3, name:'Zona 3', pctLo:70, pctHi:80, color:'#FFD54F', desc:'Umbral aeróbico' },
+  { z:4, name:'Zona 4', pctLo:80, pctHi:90, color:'#FF8A65', desc:'Umbral anaeróbico' },
+  { z:5, name:'Zona 5', pctLo:90, pctHi:100, color:'#EF5350', desc:'Máximo esfuerzo' },
+];
+const BADGE_ZONE = { bs:2, bl:2, bi:4, bf:3, bd:1 };
+
+function getZoneForSession(badge, tipo) {
+  if (tipo && /tempo|progresión|fartlek/i.test(tipo)) return 3;
+  return BADGE_ZONE[badge] || 2;
+}
+
+function calcHRZones(fcMax) {
+  if (!fcMax || fcMax < 100) return null;
+  return HR_ZONES.map(z => ({
+    ...z, lo: Math.round(fcMax * z.pctLo / 100), hi: Math.round(fcMax * z.pctHi / 100)
+  }));
+}
+
+function renderHRZoneWidget(badge, tipo, fcMax) {
+  const zones = calcHRZones(fcMax);
+  if (!zones) return '';
+  const zNum = getZoneForSession(badge, tipo);
+  const zone = zones[zNum - 1];
+  return `<div class="hrz-wrap">
+    <div class="hrz-title"><i class="fa-solid fa-heart-pulse" style="color:${zone.color}"></i> ${zone.name} · ${zone.lo}–${zone.hi} ppm · ${zone.desc}</div>
+    <div style="display:flex;gap:4px;margin-top:4px">
+      ${zones.map(z => `<div style="flex:1;text-align:center">
+        <div style="height:6px;border-radius:3px;background:${z.color};opacity:${z.z===zNum?1:0.25}"></div>
+        <div style="font-size:9px;color:${z.z===zNum?z.color:'#607D8B'};margin-top:2px;font-weight:${z.z===zNum?700:400}">Z${z.z}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderHRZonesProfile(fcMax) {
+  const zones = calcHRZones(fcMax);
+  if (!zones) return '<div style="font-size:13px;color:var(--muted);padding:8px 0">Agrega tu FC máxima en el perfil para ver tus zonas de entrenamiento.</div>';
+  return `<div class="hrz-wrap" style="background:var(--card)">
+    <div class="hrz-title"><i class="fa-solid fa-heart-pulse" style="color:var(--acc)"></i> Zonas de entrenamiento · FC máx: ${fcMax} ppm</div>
+    ${zones.map(z => `<div class="hrz-row">
+      <div class="hrz-dot" style="background:${z.color}"></div>
+      <div class="hrz-label">${z.name}</div>
+      <div class="hrz-range">${z.lo}–${z.hi} ppm</div>
+      <div class="hrz-desc">${z.desc}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TRAINING LOAD ANALYSIS
+// ═══════════════════════════════════════════════════════════
+const ZONE_INTENSITY = { 1:1, 2:2, 3:3, 4:4, 5:5 };
+
+function calcWeekLoad(week) {
+  return week.sessions.reduce((total, s) => {
+    const km = parseFloat((s.detail||'').match(/^(\d+(?:\.\d+)?)\s*km/)?.[1] || 0);
+    if (!km) return total;
+    return total + km * ZONE_INTENSITY[getZoneForSession(s.badge, s.tipo)];
+  }, 0);
+}
+
+function getLoadStatus(load, prevLoad) {
+  if (!load) return { label:'Sin datos aún', color:'#607D8B', bg:'rgba(96,125,139,.1)' };
+  if (!prevLoad) return { label:'Primera semana con datos', color:'var(--pri)', bg:'rgba(38,198,218,.1)' };
+  const change = ((load - prevLoad) / prevLoad) * 100;
+  if (change > 30)  return { label:'⚠️ Carga muy alta — riesgo de sobreentrenamiento', color:'var(--acc)', bg:'rgba(239,83,80,.12)' };
+  if (change > 10)  return { label:'📈 Carga elevada — monitorea la recuperación', color:'var(--warn)', bg:'rgba(255,167,38,.12)' };
+  if (change < -20) return { label:'📉 Semana de recuperación', color:'#4FC3F7', bg:'rgba(79,195,247,.12)' };
+  return { label:'✅ Carga óptima', color:'var(--ok)', bg:'rgba(67,160,71,.12)' };
+}
+
+function renderLoadAnalysis(plan, planId) {
+  const prog = getProgress(planId);
+  const loads = plan.weeks.map(w => ({
+    num: w.num,
+    planned: Math.round(calcWeekLoad(w)),
+    done: Math.round(w.sessions.filter(s => prog[getSessKey(w.num, s.day)] === 'done')
+      .reduce((t, s) => {
+        const km = parseFloat((s.detail||'').match(/^(\d+(?:\.\d+)?)\s*km/)?.[1] || 0);
+        return t + km * ZONE_INTENSITY[getZoneForSession(s.badge, s.tipo)];
+      }, 0)),
+  }));
+
+  // Find current active week (last with any progress)
+  const weeksWithProgress = loads.filter(w =>
+    plan.weeks.find(pw => pw.num === w.num)?.sessions.some(s => prog[getSessKey(w.num, s.day)])
+  );
+  const currentWeek = weeksWithProgress.length ? weeksWithProgress[weeksWithProgress.length-1] : loads[0];
+  const prevWeek = currentWeek.num > 1 ? loads.find(w => w.num === currentWeek.num - 1) : null;
+  const status = getLoadStatus(currentWeek.done, prevWeek?.done);
+  const maxLoad = Math.max(...loads.map(w => w.planned), 1);
+
+  return `<div class="load-wrap">
+    <div class="load-title"><i class="fa-solid fa-bolt"></i> Análisis de carga semanal</div>
+    <div class="load-grid">
+      <div class="load-card">
+        <div class="load-val" style="color:var(--pri)">${currentWeek.done}</div>
+        <div class="load-lbl">Carga realizada S${currentWeek.num}</div>
+      </div>
+      <div class="load-card">
+        <div class="load-val" style="color:#607D8B">${currentWeek.planned}</div>
+        <div class="load-lbl">Carga planificada S${currentWeek.num}</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Carga por semana (km × intensidad de zona)</div>
+    <div style="display:flex;gap:2px;align-items:flex-end;height:44px">
+      ${loads.map(w => {
+        const h = Math.max(3, Math.round((w.planned / maxLoad) * 40));
+        const dh = w.done > 0 ? Math.min(h, Math.round((w.done / maxLoad) * 40)) : 0;
+        const isCur = w.num === currentWeek.num;
+        return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end" title="Semana ${w.num}: carga ${w.planned}">
+          ${dh ? `<div style="height:${dh}px;background:#66BB6A;border-radius:2px 2px 0 0"></div>` : ''}
+          <div style="height:${Math.max(0,h-dh)}px;background:${isCur?'var(--pri)':'#2a3a4a'};border-radius:${dh?'0':'2px 2px 0 0'}"></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:#607D8B;margin-top:2px;margin-bottom:8px">
+      <span>S1</span><span>S${Math.round(loads.length/2)}</span><span>S${loads.length}</span>
+    </div>
+    <div style="display:flex;gap:12px;font-size:10px;color:var(--muted);margin-bottom:8px">
+      <span><span style="display:inline-block;width:8px;height:8px;background:var(--pri);border-radius:1px;margin-right:3px"></span>Planificado</span>
+      <span><span style="display:inline-block;width:8px;height:8px;background:#66BB6A;border-radius:1px;margin-right:3px"></span>Completado</span>
+    </div>
+    <div class="load-status" style="color:${status.color};background:${status.bg}">${status.label}</div>
+  </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1656,6 +1815,11 @@ function renderProfileScreen() {
       </div>
     </div>`;
   renderBestTimes();
+  const hrzEl = document.getElementById('hr-zones-content');
+  if (hrzEl) {
+    const profile = getProfile();
+    hrzEl.innerHTML = renderHRZonesProfile(profile ? +profile.fcMax : 0);
+  }
 }
 
 function loadProfileIntoWizard() {
@@ -3665,7 +3829,7 @@ function renderPlan(plan, fd) {
   const basePaceSec = estimatePace(fd);
   const racePaceSec = getRacePaceSec(fd);
 
-  content.innerHTML = countdownHTML + progHTML + renderPaceChart(plan, planId) + plan.weeks.map((w, i) => {
+  content.innerHTML = countdownHTML + progHTML + renderPaceChart(plan, planId) + renderLoadAnalysis(plan, planId) + plan.weeks.map((w, i) => {
     const tag = w.isRaceWeek ? ' 🏆' : w.isTaper ? ' ↓ Tapering' : w.isRecovery ? ' 🔄 Recuperación' : '';
 
     // Week completion indicator
@@ -3704,6 +3868,7 @@ function renderPlan(plan, fd) {
               <button class="sbtn" style="background:rgba(39,174,96,.1);color:var(--ok);border:1px solid rgba(39,174,96,.25)" onclick="toggleTimeForm('${key}')">
                 <i class="fa-solid fa-stopwatch"></i> Tiempo real
               </button>` : ''}
+              ${s.badge !== 'bd' && s.badge !== 'bf' ? renderHRZoneWidget(s.badge, s.tipo, fd.fcMax) : ''}
             </div>
             ${s.badge !== 'bd' && s.badge !== 'bf' ? `
             <div class="stime-form" id="tform_${key}">

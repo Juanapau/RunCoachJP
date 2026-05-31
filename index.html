@@ -1627,17 +1627,20 @@ async function recoverAccount() {
   msg.style.color = 'var(--pri)'; msg.textContent = '⏳ Buscando tu cuenta...';
 
   try {
-    // 1. Recover profile
-    const profResp = await dbGet({ action: 'getProfile', corredor_id: id });
-    if (!profResp.ok || !profResp.result) {
-      msg.style.color = 'var(--acc-b)'; msg.textContent = '❌ ID no encontrado. Verifica e intenta de nuevo.'; return;
+    // Single call to get everything
+    const resp = await dbPost('recoverFull', { corredor_id: id });
+    if (!resp.ok || !resp.result) {
+      msg.style.color = 'var(--acc-b)';
+      msg.textContent = '❌ ID no encontrado. Verifica e intenta de nuevo.';
+      return;
     }
 
-    // 2. Set corredor_id in localStorage
+    const { profile: p, planes: planesData, progreso, tiempos } = resp.result;
+
+    // 1. Set corredor_id
     localStorage.setItem('runcoach_corredor_id', id);
 
-    // 3. Save profile locally
-    const p = profResp.result;
+    // 2. Restore profile
     const profileData = {
       nombre: p.nombre, edad: p.edad, sexo: p.sexo,
       peso: p.peso_kg, estatura: p.estatura_cm,
@@ -1655,40 +1658,71 @@ async function recoverAccount() {
       monitorFC: p.monitor_fc, apps: p.apps,
     };
     localStorage.setItem('runcoach_profile', JSON.stringify(profileData));
-    msg.textContent = '✅ Perfil encontrado. Recuperando planes...';
+    msg.textContent = '✅ Perfil recuperado. Restaurando planes...';
 
-    // 4. Recover plans
-    const planesResp = await dbGet({ action: 'getPlanes', corredor_id: id });
-    if (planesResp.ok && planesResp.result && planesResp.result.length) {
-      const planes = planesResp.result.map(p => ({
-        id: p.plan_id,
-        nombre: p.nombre_plan,
-        distMeta: p.dist_meta,
-        fechaCreacion: p.fecha_creacion,
-        fechaEditado: p.fecha_editado,
-        totalW: p.total_semanas,
+    // 3. Restore plans
+    if (planesData && planesData.length) {
+      const planes = planesData.map(pl => ({
+        id: pl.plan_id,
+        nombre: pl.nombre_plan,
+        distMeta: pl.dist_meta,
+        fechaCreacion: pl.fecha_creacion,
+        fechaEditado: pl.fecha_editado || '',
+        totalW: +pl.total_semanas,
         perfil: profileData.nombre + ', ' + profileData.edad + ' años',
-        // planObj and formData will be null — plan needs to be regenerated
         planObj: null,
         formData: {
           ...profileData,
-          nombrePlan: p.nombre_plan,
-          distMeta: p.dist_meta,
-          objetivo: p.objetivo,
-          tiempoObj: p.tiempo_obj,
-          paceObj: p.pace_obj,
-          fechaInicio: p.fecha_inicio,
-          fechaCarrera: p.fecha_carrera,
-          semanasDisp: +p.total_semanas,
-          dias: (p.dias_semana||'').split(', ').filter(Boolean),
-          durMax: +p.dur_max_dia,
-          durMaxLargo: +p.dur_max_largo,
-          horario: p.horario,
+          nombrePlan: pl.nombre_plan,
+          distMeta: pl.dist_meta,
+          objetivo: pl.objetivo,
+          tiempoObj: pl.tiempo_obj,
+          paceObj: pl.pace_obj,
+          fechaInicio: pl.fecha_inicio,
+          fechaCarrera: pl.fecha_carrera,
+          semanasDisp: +pl.total_semanas,
+          dias: (pl.dias_semana||'').split(', ').filter(Boolean),
+          durMax: +pl.dur_max_dia,
+          durMaxLargo: +pl.dur_max_largo,
+          horario: pl.horario,
         },
         recovered: true,
       }));
       setPlanes(planes);
-      msg.textContent = '✅ ' + planes.length + ' plan(es) recuperado(s). ¡Todo listo!';
+      msg.textContent = '✅ ' + planes.length + ' plan(es) recuperado(s). Restaurando progreso...';
+
+      // 4. Restore progress per plan
+      if (progreso && progreso.length) {
+        const progressByPlan = {};
+        progreso.forEach(pr => {
+          if (!pr.plan_id) return;
+          if (!progressByPlan[pr.plan_id]) progressByPlan[pr.plan_id] = {};
+          const key = getSessKey(pr.semana_num, pr.dia_nombre);
+          progressByPlan[pr.plan_id][key] = pr.estado || '';
+        });
+        Object.entries(progressByPlan).forEach(([planId, prog]) => {
+          setProgress(planId, prog);
+        });
+        msg.textContent = '✅ Progreso restaurado. Recuperando tiempos reales...';
+      }
+
+      // 5. Restore real times per plan
+      if (tiempos && Object.keys(tiempos).length) {
+        // Group times by plan_id
+        const timesByPlan = {};
+        Object.entries(tiempos).forEach(([, t]) => {
+          if (!t.plan_id) return;
+          if (!timesByPlan[t.plan_id]) timesByPlan[t.plan_id] = {};
+          const key = getSessKey(t.weekNum, t.dayName);
+          timesByPlan[t.plan_id][key] = t;
+        });
+        Object.entries(timesByPlan).forEach(([planId, times]) => {
+          setRealTimes(planId, times);
+        });
+        msg.textContent = '✅ Todo recuperado correctamente. ¡Listo!';
+      } else {
+        msg.textContent = '✅ Cuenta recuperada. ¡Todo listo!';
+      }
     } else {
       msg.textContent = '✅ Perfil recuperado. No se encontraron planes guardados.';
     }
@@ -1696,12 +1730,13 @@ async function recoverAccount() {
     setTimeout(() => {
       localStorage.setItem('runcoach_onboarding_done', '1');
       hideOnboarding();
-      showToast('¡Cuenta recuperada correctamente! 🎉');
+      showToast('¡Cuenta recuperada completamente! 🎉');
       renderProfileScreen();
       renderHistory();
     }, 1500);
 
   } catch(e) {
+    console.error('Recovery error:', e);
     msg.style.color = 'var(--acc-b)';
     msg.textContent = '❌ Error de conexión. Verifica tu internet e intenta de nuevo.';
   }

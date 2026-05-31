@@ -3365,17 +3365,30 @@ function renderPaceChart(plan, planId) {
 // ═══════════════════════════════════════════════════════════
 //  BEST TIMES IN PROFILE
 // ═══════════════════════════════════════════════════════════
+function normalizeDist(dist) {
+  // Normalize any distance string to standard key: '21K - Media Maratón' → '21K'
+  if (!dist) return '';
+  const m = dist.match(/^(\d+)K?/i);
+  if (!m) return dist.split(' ')[0].trim();
+  const km = +m[1];
+  const map = {5:'5K', 10:'10K', 15:'15K', 21:'21K', 42:'42K'};
+  return map[km] || (km + 'K');
+}
+
 function getBestTimes() {
   const planes = getPlanes();
   const bests = {};
   planes.forEach(p => {
     const times = getRealTimes(p.id);
-    const dist = p.formData ? p.formData.distMeta : '';
+    if (!times || !Object.keys(times).length) return;
+    const rawDist = (p.formData ? p.formData.distMeta : '') || p.distMeta || '';
+    const dist = normalizeDist(rawDist);
     if (!dist) return;
+    const planName = p.nombre || (p.formData && p.formData.nombrePlan) || '—';
     Object.values(times).forEach(t => {
-      if (!t.paceSec) return;
+      if (!t || !t.paceSec || t.paceSec <= 0) return;
       if (!bests[dist] || t.paceSec < bests[dist].paceSec) {
-        bests[dist] = { pace:t.pace, time:t.time, paceSec:t.paceSec, planName:p.nombre, km:t.km };
+        bests[dist] = { pace: t.pace||'', time: t.time||'', paceSec: t.paceSec, planName, km: t.km||0 };
       }
     });
   });
@@ -3387,7 +3400,7 @@ function renderBestTimes() {
   if (!c) return;
   const bests = getBestTimes();
   const dists = ['5K','10K','15K','21K','42K'];
-  const hasAny = dists.some(d => bests[d]);
+  const hasAny = Object.keys(bests).length > 0;
   if (!hasAny) {
     c.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0">Registra tiempos en tus planes para ver tus mejores marcas aquí.</div>';
     return;
@@ -3398,8 +3411,8 @@ function renderBestTimes() {
       return '<div class="best-time-card">' +
         '<div class="best-time-dist">' + d + '</div>' +
         (b
-          ? '<div class="best-time-val">' + b.time + '</div>' +
-            '<div class="best-time-pace">⚡ ' + b.pace + ' min/km</div>' +
+          ? '<div class="best-time-val">' + esc(b.time) + '</div>' +
+            '<div class="best-time-pace">⚡ ' + esc(b.pace) + ' min/km</div>' +
             '<div class="best-time-plan">📋 ' + esc(b.planName) + '</div>'
           : '<div class="best-time-val" style="color:#607D8B">—</div>' +
             '<div class="best-time-pace" style="color:#607D8B">Sin registro</div>'

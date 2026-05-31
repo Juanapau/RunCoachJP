@@ -3553,12 +3553,25 @@ function renderPlan(plan, fd) {
   `;
 
   // ── Countdown ─────────────────────────────────────────────
-  const startDate = fd.fechaInicio ? new Date(fd.fechaInicio) : new Date();
-  const raceDate = fd.fechaCarrera ? new Date(fd.fechaCarrera) : null;
+  // Parse dates as local time (avoid UTC timezone offset issues)
+  function parseLocalDate(str) {
+    if (!str) return null;
+    // Handle both YYYY-MM-DD and DD/MM/YYYY formats
+    let y, m, d;
+    if (str.includes('-')) {
+      [y, m, d] = str.split('-').map(Number);
+    } else if (str.includes('/')) {
+      [d, m, y] = str.split('/').map(Number);
+    } else {
+      return null;
+    }
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+  const startDate = fd.fechaInicio ? parseLocalDate(fd.fechaInicio) : new Date();
+  const raceDate = parseLocalDate(fd.fechaCarrera);
   const today = new Date();
-  // Normalize both to midnight to avoid time-of-day affecting the count
   today.setHours(0, 0, 0, 0);
-  if (raceDate) raceDate.setHours(0, 0, 0, 0);
   const daysToRace = raceDate ? Math.round((raceDate - today) / 86400000) : null;
 
   const countdownHTML = daysToRace !== null ? `

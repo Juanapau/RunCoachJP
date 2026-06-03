@@ -2469,7 +2469,7 @@ function planWeeks(d) {
   if (!totalW) {
     totalW = autoWeeks || defWeeks[d.experiencia] || 12;
   }
-  totalW = Math.max(4, Math.min(totalW, 28));
+  totalW = Math.max(1, Math.min(totalW, 28));
 
   const raceKm = getRaceDistKm(d.distMeta);
   const mods = getObjetivoModifiers(d);

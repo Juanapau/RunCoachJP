@@ -3047,12 +3047,32 @@ function formatGarmin(s, p, bps, useGPS) {
   }
 
   if (s.badge === 'bi') {
+    // Check if it's a progression run (no × in detail)
+    const isProgresion = !s.detail.match(/(\d+)[×x](\d+)/) &&
+      (s.tipo.toLowerCase().includes('progresión') || s.tipo.toLowerCase().includes('progresion') ||
+       s.tipo.toLowerCase().includes('fartlek') || s.tipo.toLowerCase().includes('tempo'));
+
+    if (isProgresion) {
+      // Format as 3-segment run: warm → build → final pace
+      const warmKm = Math.max(1, Math.round(km * 0.15));
+      const finalKm = Math.max(1, Math.round(km * 0.35));
+      const midKm = Math.max(1, km - warmKm - finalKm);
+      const estTotal = fmtTime(
+        warmKm * Math.round(bps*1.10) +
+        midKm  * Math.round(bps*1.0) +
+        finalKm * Math.round(bps*0.88)
+      );
+      steps.push({ color:'red',    name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.10) : null, paceRange: useGPS ? fmtPaceRange(bps,1.08,1.12) : null, estTime: fmtTime(warmKm*Math.round(bps*1.10)) });
+      steps.push({ color:'blue',   name:'Desarrollo',    dist:`${midKm} km`,  pace: useGPS ? fmtPace(bps,1.0)  : null, paceRange: useGPS ? fmtPaceRange(bps,0.98,1.02) : null, estTime: fmtTime(midKm*Math.round(bps)) });
+      steps.push({ color:'orange', name:'Ritmo objetivo',dist:`${finalKm} km`,pace: useGPS ? fmtPace(bps,0.88) : null, paceRange: useGPS ? fmtPaceRange(bps,0.86,0.90) : null, estTime: fmtTime(finalKm*Math.round(bps*0.88)) });
+      return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
+    }
+
+    // Interval session
     const m = s.detail.match(/(\d+)[×x](\d+)/);
     const reps = m ? +m[1] : 4, dist = m ? +m[2] : 800;
     const warmM = 600, coolM = 600, recM = 400;
     const totalM = warmM + reps*(dist+recM) + coolM;
-    // Interval pace: 15% FASTER than easy pace (factor 0.85)
-    // Recovery pace: 40% SLOWER than easy pace (factor 1.40) — jogging
     const intervalFactor = 0.85;
     const recovFactor = 1.40;
     const repTimeSec = Math.round(dist/1000 * bps * intervalFactor);

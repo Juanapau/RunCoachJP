@@ -1219,8 +1219,12 @@ const HR_ZONES = [
 ];
 const BADGE_ZONE = { bs:2, bl:2, bi:4, bf:3, bd:1 };
 
-function getZoneForSession(badge, tipo) {
-  if (tipo && /tempo|progresión|fartlek/i.test(tipo)) return 3;
+function getZoneForSession(badge, tipo, weekNum, totalW) {
+  if (!tipo) return BADGE_ZONE[badge] || 2;
+  const t = tipo.toLowerCase();
+  if (/tempo|progresión|fartlek/i.test(t)) return 3;
+  if (/tirada larga progresiva/i.test(t)) return 3; // peak long run has Z3 segments
+  if (badge === 'bl') return 2; // regular long run stays Z2
   return BADGE_ZONE[badge] || 2;
 }
 
@@ -2662,22 +2666,28 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
   const noIntervals = hasLesion || mods.noIntervals;
   const noProgresion = mods.noProgresion;
   const extraEasy = mods.extraEasyRuns;
-  const n = days.length;
   const pace = (f) => paceStr(basePace, f, useGPS);
+
+  const n = days.length;
   const fromEnd = totalW - weekNum + 1;
   const isRaceWeek = fromEnd === 1;
   const isTaper = fromEnd <= 3;
   const isRecovery = weekNum % 4 === 0 && !isTaper;
+  const buildWeeks = totalW - 4;
+  const buildRatio = Math.min((weekNum - 1) / Math.max(buildWeeks, 1), 1.0);
+
+  // ── Periodization phases ──────────────────────────────────
+  const phase = weekNum / Math.max(totalW, 1);
+  // Phase 1: Base (0-40%) — all Z2
+  // Phase 2: Development (40-75%) — Friday Z3 added
+  // Phase 3: Peak (75-90%) — Friday Z3 + long run Z3 segments
+  const isDevPhase  = phase > 0.40 && !isTaper && !isRaceWeek;
+  const isPeakPhase = phase > 0.75 && !isTaper && !isRaceWeek;
 
   // ── Long run calculation ──────────────────────────────────
   const maxLong = getMaxLongRun(raceKm, exp, distMaxCompletada);
-  const buildWeeks = totalW - 4;
-  const buildRatio = Math.min((weekNum - 1) / Math.max(buildWeeks, 1), 1.0);
-  // Minimum long run start: >10km if race is >15km
   const minLongStart = raceKm > 15 ? 11 : Math.max(3, Math.round(raceKm * 0.35));
   const startLong = Math.min(maxLong, Math.max(minLongStart, Math.round(maxLong * 0.35)));
-
-  // Weeks at peak long run: last 2-3 build weeks repeat maxLong
   const peakLongWeeks = Math.min(3, Math.floor(buildWeeks * 0.25));
   const peakStart = buildWeeks - peakLongWeeks;
   const isAtPeak = weekNum > peakStart && weekNum <= buildWeeks && !isRecovery;
@@ -2689,19 +2699,33 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
     isRecovery        ? Math.round(startLong + (maxLong - startLong) * buildRatio * 0.65) :
     isAtPeak          ? maxLong :
     Math.round(startLong + (maxLong - startLong) * buildRatio);
-
-  // ALWAYS enforce the hard cap — no exceptions
   const longKm = Math.min(rawLong, maxLong);
 
-  // ── Weekday run km — max 14km, varied by week ────────────
+  // ── Long run session — Z2 base + Z3 segments in peak phase ──
+  const getLongSession = () => {
+    if (isPeakPhase && raceKm >= 15 && mods.racePaceSec) {
+      // Last 30% of long run at race pace (Z3)
+      const z3Km = Math.round(longKm * 0.30);
+      const z2Km = longKm - z3Km;
+      const racePaceStr = `${Math.floor(mods.racePaceSec/60)}:${(mods.racePaceSec%60).toString().padStart(2,'0')}`;
+      return {
+        tipo: 'Tirada larga progresiva', badge: 'bl',
+        detail: `${longKm} km · ${pace(1.08)} → últimos ${z3Km} km a ${racePaceStr} min/km`,
+        note: `Primeros ${z2Km} km suaves (Z2 · ${pace(1.08)}). Últimos ${z3Km} km a ritmo objetivo de carrera (Z3 · ${racePaceStr} min/km). Llevar agua y geles.`,
+        nutricion: `Noche anterior: cena rica en carbohidratos. Mañana: desayuno 2h antes. Lleva geles para consumir cada 45 min.`,
+        hidratacion: `Bebe 500ml al despertar. Durante: cada 15-20 min, 150-200ml. Repón con 750ml-1L en las siguientes 2h.`
+      };
+    }
+    return SESSION_TYPES.largo(longKm, pace, useGPS);
+  };
+
+  // ── Weekday run km ────────────────────────────────────────
   const rawEasy = Math.max(5, Math.round(weekVol * 0.17));
   const maxWeekday = 14;
   const easyBase = Math.min(rawEasy, maxWeekday);
-  // Three distinct distances that rotate differently each week
   const easyShort  = Math.max(5, Math.round(easyBase * 0.80));
   const easyMedium = Math.min(maxWeekday, Math.round(easyBase * 1.0));
   const easyLong2  = Math.min(maxWeekday, Math.round(easyBase * 1.18));
-  // Rotate pattern offset by week so same-position days vary week to week
   const weekOffset = (weekNum - 1) % 3;
   const easyPattern = [
     [easyShort, easyMedium, easyLong2],
@@ -2710,12 +2734,18 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
   ][weekOffset];
   const intKm = Math.max(4, Math.min(12, Math.round(weekVol * 0.12)));
 
-  // Weekend day for long run
-  const weekend = ['Sábado','Domingo'];
+  // ── Identify "middle" weekday for Z3 tempo (between series and long run) ──
+  // Sort days by position and find the middle one
+  const sortedDays = [...days.keys()].sort((a,b) => a-b);
   const longIdx = (() => {
+    const weekend = ['Domingo','Sábado'];
     for (const wd of weekend) { const i = days.indexOf(wd); if (i !== -1) return i; }
     return n >= 3 ? n - 2 : n - 1;
   })();
+  // Middle day index — used for Z3 tempo in development/peak phases
+  const middleIdx = sortedDays.length >= 3
+    ? sortedDays[Math.floor(sortedDays.length / 2)]
+    : -1;
 
   let pool = [];
 
@@ -2737,7 +2767,10 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
     const seriesDist = raceKm >= 21 ? (exp==='avanzado' ? 1000 : 800) : (exp==='avanzado' ? 800 : 400);
     const seriesReps = raceKm >= 21 ? 6 : 4;
     let sessions = new Array(n).fill(null);
-    sessions[longIdx] = SESSION_TYPES.largo(longKm, pace, useGPS);
+
+    // Assign long run
+    sessions[longIdx] = getLongSession();
+
     let filled = 0;
     let easyCount = 0;
     for (let i = 0; i < n; i++) {
@@ -2751,8 +2784,16 @@ function assignSessions(days, weekVol, weekNum, totalW, basePace, useGPS, hasGym
         sessions[i] = getFartlekSession(weekNum, pace, useGPS, mods.racePaceSec || null, basePace);
         filled++; continue;
       }
-      if (i===n-1)                            { sessions[i]=SESSION_TYPES.descansoActivo(); continue; }
-      // Use week-offset pattern for variety — different km each week
+      if (i===n-1) { sessions[i]=SESSION_TYPES.descansoActivo(); continue; }
+
+      // Z3 tempo on middle day during development/peak phases
+      if (isDevPhase && i === middleIdx && !noIntervals && raceKm >= 10) {
+        sessions[i] = getProgresionSession(weekNum, pace, useGPS, mods.racePaceSec || null, basePace);
+        easyCount++;
+        continue;
+      }
+
+      // Z2 easy run
       const varKm = easyPattern[easyCount % easyPattern.length];
       sessions[i] = SESSION_TYPES.suave(varKm, pace, useGPS);
       easyCount++;

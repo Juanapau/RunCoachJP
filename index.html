@@ -2878,8 +2878,26 @@ function generatePlan(d) {
     // Calculate ACTUAL km from sessions so header matches reality
     const actualVol = sessions.reduce((sum, item) => {
       const s = item.s;
-      const km = parseFloat((s.detail || '').match(/^(\d+(?:\.\d+)?)\s*km/)?.[1] || 0);
-      return sum + km;
+      const detail = s.detail || '';
+      // Standard format: "8 km · ..."
+      const kmMatch = detail.match(/^(\d+(?:\.\d+)?)\s*km/);
+      if (kmMatch) return sum + parseFloat(kmMatch[1]);
+      // Interval format: "6×1000m · ..." — calculate total distance including warmup/cooldown
+      const repMatch = detail.match(/(\d+)\s*[×x]\s*(\d+)\s*m/);
+      if (repMatch) {
+        const reps = +repMatch[1], distM = +repMatch[2];
+        // Approximate: warmup 1km + (reps × dist) + recovery jogs + cooldown 1km
+        const recoveryM = 400; // typical recovery jog between reps
+        const totalM = 1000 /*warm*/ + reps*(distM + recoveryM) + 1000 /*cool*/;
+        return sum + totalM/1000;
+      }
+      // Pyramid format: "200-400-600-400-200m · ..."
+      const pyrMatch = detail.match(/^([\d-]+)m/);
+      if (pyrMatch && pyrMatch[1].includes('-')) {
+        const totalM = pyrMatch[1].split('-').reduce((a,b) => a + (+b||0), 0);
+        return sum + (1000 + totalM + 1000)/1000; // + warm/cool
+      }
+      return sum;
     }, 0);
 
     const obj = weekObjective(w, totalW, d.experiencia, d.distMeta, d.lesion, isTaper, isRecovery, isRaceWeek);
@@ -3014,13 +3032,23 @@ function formatGarmin(s, p, bps, useGPS) {
   const steps = [];
 
   if (s.badge === 'bs') {
-    // Easy run: warm 10% slower, main at easy pace, cool 10% slower
+    // bps = the AVERAGE pace shown in the session detail (e.g. 6:51)
+    // Warm/cool run slower (factor 1.12), so main segment must run FASTER
+    // to compensate, keeping the overall average exactly at bps.
     const warmKm = Math.max(1, Math.round(km * 0.1));
     const mainKm = Math.max(1, km - warmKm * 2);
-    const estTotal = fmtTime(Math.round(km * bps));
-    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.12) : null, paceRange: useGPS ? fmtPaceRange(bps,1.10,1.15) : null, estTime: fmtTime(warmKm*Math.round(bps*1.12)) });
-    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.0)  : null, paceRange: useGPS ? fmtPaceRange(bps,0.98,1.02)  : null, estTime: fmtTime(mainKm*Math.round(bps)) });
-    steps.push({ color:'green', name:'Enfriamiento',  dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.12) : null, paceRange: useGPS ? fmtPaceRange(bps,1.10,1.15) : null, estTime: fmtTime(warmKm*Math.round(bps*1.12)) });
+    const warmCoolFactor = 1.12;
+    const warmCoolPaceSec = Math.round(bps * warmCoolFactor);
+
+    // Solve for main pace so weighted average == bps:
+    // (warmKm*warmCoolPaceSec*2 + mainKm*mainPaceSec) / km == bps
+    const mainPaceSec = Math.round((km * bps - 2 * warmKm * warmCoolPaceSec) / mainKm);
+    const mainFactor = mainPaceSec / bps;
+
+    const estTotal = fmtTime(2*warmKm*warmCoolPaceSec + mainKm*mainPaceSec);
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,warmCoolFactor) : null, paceRange: useGPS ? fmtPaceRange(bps,warmCoolFactor-0.02,warmCoolFactor+0.03) : null, estTime: fmtTime(warmKm*warmCoolPaceSec) });
+    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,mainFactor)  : null, paceRange: useGPS ? fmtPaceRange(bps,mainFactor-0.02,mainFactor+0.02)  : null, estTime: fmtTime(mainKm*mainPaceSec) });
+    steps.push({ color:'green', name:'Enfriamiento',  dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,warmCoolFactor) : null, paceRange: useGPS ? fmtPaceRange(bps,warmCoolFactor-0.02,warmCoolFactor+0.03) : null, estTime: fmtTime(warmKm*warmCoolPaceSec) });
     return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
   }
 
@@ -3035,14 +3063,19 @@ function formatGarmin(s, p, bps, useGPS) {
       steps.push({ color:'blue',  name:'🏆 Carrera',    dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.0)  : null, paceRange: useGPS ? fmtPaceRange(bps,0.98,1.02)  : null, estTime: fmtTime(mainKm*Math.round(bps)) });
       return { type:'garmin', name:'🏆 DÍA DE CARRERA', totalDist:`${km} km`, estTime: estTotal, steps };
     }
-    // Long run
+    // Long run — bps is the AVERAGE pace shown. Compensate main segment.
     const warmKm = Math.max(2, Math.round(km * 0.1));
     const coolKm = Math.max(1, Math.round(km * 0.05));
     const mainKm = Math.max(1, km - warmKm - coolKm);
-    const estTotal = fmtTime(Math.round(km * bps * 1.08));
-    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,1.15) : null, paceRange: useGPS ? fmtPaceRange(bps,1.12,1.18) : null, estTime: fmtTime(warmKm*Math.round(bps*1.15)) });
-    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,1.08) : null, paceRange: useGPS ? fmtPaceRange(bps,1.05,1.10) : null, estTime: fmtTime(mainKm*Math.round(bps*1.08)) });
-    steps.push({ color:'green', name:'Enfriamiento',  dist:`${coolKm} km`, pace: useGPS ? fmtPace(bps,1.15) : null, paceRange: useGPS ? fmtPaceRange(bps,1.12,1.18) : null, estTime: fmtTime(coolKm*Math.round(bps*1.15)) });
+    const warmCoolFactor = 1.15;
+    const warmPaceSec = Math.round(bps * warmCoolFactor);
+    const coolPaceSec = Math.round(bps * warmCoolFactor);
+    const mainPaceSec = Math.round((km * bps - warmKm * warmPaceSec - coolKm * coolPaceSec) / mainKm);
+    const mainFactor = mainPaceSec / bps;
+    const estTotal = fmtTime(warmKm*warmPaceSec + mainKm*mainPaceSec + coolKm*coolPaceSec);
+    steps.push({ color:'red',   name:'Calentamiento', dist:`${warmKm} km`, pace: useGPS ? fmtPace(bps,warmCoolFactor) : null, paceRange: useGPS ? fmtPaceRange(bps,warmCoolFactor-0.03,warmCoolFactor+0.03) : null, estTime: fmtTime(warmKm*warmPaceSec) });
+    steps.push({ color:'blue',  name:'Carrera',       dist:`${mainKm} km`, pace: useGPS ? fmtPace(bps,mainFactor) : null, paceRange: useGPS ? fmtPaceRange(bps,mainFactor-0.03,mainFactor+0.03) : null, estTime: fmtTime(mainKm*mainPaceSec) });
+    steps.push({ color:'green', name:'Enfriamiento',  dist:`${coolKm} km`, pace: useGPS ? fmtPace(bps,warmCoolFactor) : null, paceRange: useGPS ? fmtPaceRange(bps,warmCoolFactor-0.03,warmCoolFactor+0.03) : null, estTime: fmtTime(coolKm*coolPaceSec) });
     return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
   }
 
@@ -4009,12 +4042,21 @@ function renderPlan(plan, fd) {
         </div>`;
     }).join('');
 
+    // Calculate real km registered this week from getRealTimes
+    const weekRealKm = (() => {
+      const times = getRealTimes(planId);
+      const wt = Object.values(times).filter(t => +t.weekNum === w.num);
+      return wt.reduce((sum, t) => sum + (parseFloat(t.km) || 0), 0);
+    })();
+
     return '<div class="ai">' +
       '<div class="ah ' + (i===0?'open':'') + '" onclick="togAcc(this)">' +
         '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">' +
           '<div>' +
             '<span><span class="tr">Semana ' + w.num + '</span>' + tag + '</span>' +
-            '<div class="week-dates">' + getWeekDateRange(w.num) + ' · ' + w.vol + ' km</div>' +
+            '<div class="week-dates">' + getWeekDateRange(w.num) + ' · ' + w.vol + ' km' +
+              (weekRealKm > 0 ? ' <span style="color:var(--ok);font-weight:700">· ' + weekRealKm.toFixed(1).replace(/\.0$/,'') + ' km reales</span>' : '') +
+            '</div>' +
           '</div>' +
           weekCounterHTML(w.num, weekDone, weekTotal) +
         '</div>' +

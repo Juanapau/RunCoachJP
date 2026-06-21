@@ -2875,30 +2875,9 @@ function generatePlan(d) {
       d.gimnasio, d.lesion, d.experiencia, raceKm, d.distMax, mods
     );
 
-    // Calculate ACTUAL km from sessions so header matches reality
-    const actualVol = sessions.reduce((sum, item) => {
-      const s = item.s;
-      const detail = s.detail || '';
-      // Standard format: "8 km · ..."
-      const kmMatch = detail.match(/^(\d+(?:\.\d+)?)\s*km/);
-      if (kmMatch) return sum + parseFloat(kmMatch[1]);
-      // Interval format: "6×1000m · ..." — calculate total distance including warmup/cooldown
-      const repMatch = detail.match(/(\d+)\s*[×x]\s*(\d+)\s*m/);
-      if (repMatch) {
-        const reps = +repMatch[1], distM = +repMatch[2];
-        // Approximate: warmup 1km + (reps × dist) + recovery jogs + cooldown 1km
-        const recoveryM = 400; // typical recovery jog between reps
-        const totalM = 1000 /*warm*/ + reps*(distM + recoveryM) + 1000 /*cool*/;
-        return sum + totalM/1000;
-      }
-      // Pyramid format: "200-400-600-400-200m · ..."
-      const pyrMatch = detail.match(/^([\d-]+)m/);
-      if (pyrMatch && pyrMatch[1].includes('-')) {
-        const totalM = pyrMatch[1].split('-').reduce((a,b) => a + (+b||0), 0);
-        return sum + (1000 + totalM + 1000)/1000; // + warm/cool
-      }
-      return sum;
-    }, 0);
+    // Calculate ACTUAL km from sessions — uses the SAME logic as formatGarmin
+    // so the week total always matches the sum of individual session distances
+    const actualVol = sessions.reduce((sum, item) => sum + getSessionTotalKm(item.s), 0);
 
     const obj = weekObjective(w, totalW, d.experiencia, d.distMeta, d.lesion, isTaper, isRecovery, isRaceWeek);
 
@@ -3023,6 +3002,48 @@ function fmtPaceRange(sec, loF, hiF) {
   return `${fmt(lo)} - ${fmt(hi)} min/km`;
 }
 
+// ─── PLAN-LEVEL CONSTANTS ─────────────────────────────────
+// These define the actual physical structure of a session
+// (warmup/cooldown/recovery distances). They are NOT tied to
+// any specific app's display format — Garmin, Strava, Nike all
+// must reference these same values so the total km is always
+// consistent regardless of which app the runner uses.
+const SESSION_STRUCTURE = {
+  intervalWarmupM:   600,  // warmup before series
+  intervalCooldownM: 600,  // cooldown after series
+  intervalRecoveryM: 400,  // recovery jog between reps
+};
+
+// ─── SHARED: Calculate exact total km of a session ───────
+// This is THE source of truth for session distance. Used by:
+// - Week volume calculation (generatePlan)
+// - Garmin/Strava/Nike formatters (so totals always match)
+function getSessionTotalKm(s) {
+  const detail = s.detail || '';
+
+  // Standard format: "8 km · ..." (suave, largo, progresión — already exact)
+  const kmMatch = detail.match(/^(\d+(?:\.\d+)?)\s*km/);
+  if (kmMatch) return parseFloat(kmMatch[1]);
+
+  // Pyramid format: "200-400-600-400-200m · ..." (check before reps×dist)
+  const pyrMatch = detail.match(/^([\d-]+)m/);
+  if (pyrMatch && pyrMatch[1].includes('-')) {
+    const totalM = pyrMatch[1].split('-').reduce((a,b) => a + (+b||0), 0);
+    const { intervalWarmupM: w, intervalCooldownM: c } = SESSION_STRUCTURE;
+    return (w + totalM + c) / 1000;
+  }
+
+  // Interval format: "6×1000m · ..."
+  const repMatch = detail.match(/(\d+)\s*[×x]\s*(\d+)\s*m/);
+  if (repMatch) {
+    const reps = +repMatch[1], distM = +repMatch[2];
+    const { intervalWarmupM: w, intervalCooldownM: c, intervalRecoveryM: r } = SESSION_STRUCTURE;
+    return (w + reps*(distM + r) + c) / 1000;
+  }
+
+  return 0;
+}
+
 function formatGarmin(s, p, bps, useGPS) {
   // bps = base easy pace in sec/km (higher = slower)
   // Factor > 1 = SLOWER, Factor < 1 = FASTER
@@ -3101,10 +3122,10 @@ function formatGarmin(s, p, bps, useGPS) {
       return { type:'garmin', name: s.tipo, totalDist:`${km} km`, estTime: estTotal, steps };
     }
 
-    // Interval session
+    // Interval session — uses SESSION_STRUCTURE constants (shared with getSessionTotalKm)
     const m = s.detail.match(/(\d+)[×x](\d+)/);
     const reps = m ? +m[1] : 4, dist = m ? +m[2] : 800;
-    const warmM = 600, coolM = 600, recM = 400;
+    const { intervalWarmupM: warmM, intervalCooldownM: coolM, intervalRecoveryM: recM } = SESSION_STRUCTURE;
     const totalM = warmM + reps*(dist+recM) + coolM;
     const intervalFactor = 0.85;
     const recovFactor = 1.40;
@@ -3130,7 +3151,7 @@ function formatGarmin(s, p, bps, useGPS) {
 
 function formatStrava(s, p, bps, useGPS) {
   const kmMatch = s.detail.match(/^(\d+(?:\.\d+)?)\s*km/);
-  const km = kmMatch ? parseFloat(kmMatch[1]) : 5;
+  const km = kmMatch ? parseFloat(kmMatch[1]) : null;
 
   if (s.badge === 'bs' || s.badge === 'bl') {
     const pace = useGPS ? fmtPace(bps, s.badge==='bl'?1.05:0.95) : 'ritmo suave';
@@ -3145,14 +3166,26 @@ function formatStrava(s, p, bps, useGPS) {
   }
   if (s.badge === 'bi') {
     const m = s.detail.match(/(\d+)[×x](\d+)/);
-    const reps = m ? +m[1] : 4, dist = m ? +m[2] : 800;
-    const pace = useGPS ? fmtPace(bps, 0.85) : 'ritmo de esfuerzo alto';
+    if (m) {
+      const reps = +m[1], dist = +m[2];
+      const { intervalWarmupM: warmM, intervalCooldownM: coolM, intervalRecoveryM: recM } = SESSION_STRUCTURE;
+      const totalKm = getSessionTotalKm(s); // same total as everywhere else
+      const pace = useGPS ? fmtPace(bps, 0.85) : 'ritmo de esfuerzo alto';
+      return {
+        type: 'strava',
+        description: [
+          `📍 ${s.tipo} — ${totalKm.toFixed(1)} km totales`,
+          `🔥 Calentar ${warmM}m + ${reps} × ${dist}m a ${pace} + recuperación ${recM}m + Enfriar ${coolM}m`,
+          `💡 ${s.note||''}`,
+        ].join('\n')
+      };
+    }
+    // Progression/fartlek/tempo — already has total km in detail
+    const totalKm = getSessionTotalKm(s);
     return {
       type: 'strava',
       description: [
-        `📍 ${s.tipo}`,
-        `🔥 ${reps} × ${dist}m a ${pace}`,
-        `⏸ Recuperación: ${dist/2}m trote suave entre series`,
+        `📍 ${s.tipo} — ${totalKm.toFixed(1)} km`,
         `💡 ${s.note||''}`,
       ].join('\n')
     };
@@ -3163,9 +3196,10 @@ function formatStrava(s, p, bps, useGPS) {
 function formatNike(s, p, bps, useGPS) {
   if (!useGPS) return null;
   const pace = fmtPace(bps, s.badge==='bi'?0.85:s.badge==='bl'?1.05:0.95);
+  const totalKm = getSessionTotalKm(s);
   return {
     type: 'nike',
-    description: `${s.tipo} · ${s.detail.split('·')[0].trim()} · Objetivo: ${pace}`
+    description: `${s.tipo} · ${totalKm.toFixed(1)} km totales · Objetivo: ${pace}`
   };
 }
 

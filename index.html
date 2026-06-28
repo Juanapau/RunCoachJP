@@ -450,6 +450,16 @@
     .load-bar-bg{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:8px 0 4px}
     .load-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
     .load-status{font-size:12px;font-weight:700;padding:6px 10px;border-radius:6px;text-align:center}
+    /* week analysis */
+    .wk-analysis{margin:0 18px 16px;background:linear-gradient(135deg,#0d1f2d,#1a2a3a);border:1px solid rgba(38,198,218,.2);border-radius:10px;padding:14px}
+    .wk-analysis-title{font-size:12px;font-weight:700;color:var(--pri);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+    .wk-analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .wk-analysis-stat{background:rgba(255,255,255,.04);border-radius:8px;padding:8px 10px}
+    .wk-analysis-stat-val{font-size:18px;font-weight:800;font-family:'Bebas Neue',sans-serif}
+    .wk-analysis-stat-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+    .wk-analysis-text{font-size:13px;color:var(--text);line-height:1.6;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}
+    .wk-analysis-text b{color:var(--pri)}
+
     /* utils */
     .mt4{margin-top:12px} .mt8{margin-top:20px} .mb4{margin-bottom:12px}
     .tr{color:var(--pri)} .tm{color:var(--muted)} .tsm{font-size:13px}
@@ -1341,6 +1351,111 @@ function renderLoadAnalysis(plan, planId) {
       <span><span style="display:inline-block;width:8px;height:8px;background:#66BB6A;border-radius:1px;margin-right:3px"></span>Completado</span>
     </div>
     <div class="load-status" style="color:${status.color};background:${status.bg}">${status.label}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WEEKLY ANALYSIS — appears when all sessions are marked
+// ═══════════════════════════════════════════════════════════
+function renderWeekAnalysis(week, planId) {
+  const prog = getProgress(planId);
+  const times = getRealTimes(planId);
+
+  // Only show if EVERY session has been marked (done or skipped)
+  const allMarked = week.sessions.every(s => {
+    const st = prog[getSessKey(week.num, s.day)];
+    return st === 'done' || st === 'skipped';
+  });
+  if (!allMarked || week.sessions.length === 0) return '';
+
+  const doneSessions = week.sessions.filter(s => prog[getSessKey(week.num, s.day)] === 'done');
+  const skippedSessions = week.sessions.filter(s => prog[getSessKey(week.num, s.day)] === 'skipped');
+  const totalSessions = week.sessions.length;
+  const compliancePct = Math.round((doneSessions.length / totalSessions) * 100);
+
+  const plannedKm = week.sessions.reduce((s, sess) => s + getSessionTotalKm(sess), 0);
+  const realKmEntries = Object.values(times).filter(t => +t.weekNum === week.num);
+  const realKm = realKmEntries.reduce((s, t) => s + (parseFloat(t.km) || 0), 0);
+  const kmPct = plannedKm > 0 ? Math.round((realKm / plannedKm) * 100) : 0;
+
+  const paceEntries = realKmEntries.filter(t => t.paceSec > 0);
+  const avgRealPaceSec = paceEntries.length
+    ? Math.round(paceEntries.reduce((s,t) => s+t.paceSec, 0) / paceEntries.length)
+    : null;
+  const fmtP = sec => Math.floor(sec/60) + ':' + (sec%60).toString().padStart(2,'0');
+
+  const plannedSess = week.sessions.find(s => (s.detail||'').includes('min/km'));
+  let plannedPaceSec = null;
+  if (plannedSess) {
+    const pm = plannedSess.detail.match(/(\d+):(\d+)\s*min\/km/);
+    if (pm) plannedPaceSec = +pm[1]*60 + +pm[2];
+  }
+
+  const parts = [];
+
+  if (compliancePct === 100) {
+    parts.push(`✅ <b>Semana perfecta</b> — completaste el 100% de tus entrenamientos planificados.`);
+  } else if (compliancePct >= 75) {
+    parts.push(`👍 <b>Buena semana</b> — realizaste ${doneSessions.length} de ${totalSessions} sesiones (${compliancePct}%).`);
+  } else if (compliancePct >= 50) {
+    parts.push(`⚠️ <b>Semana irregular</b> — solo completaste ${doneSessions.length} de ${totalSessions} sesiones (${compliancePct}%). Intenta priorizar la consistencia la próxima semana.`);
+  } else {
+    parts.push(`🔴 <b>Semana difícil</b> — apenas ${doneSessions.length} de ${totalSessions} sesiones realizadas (${compliancePct}%). Si hay un motivo recurrente (tiempo, fatiga, lesión), vale la pena ajustar el plan.`);
+  }
+
+  if (realKm > 0) {
+    if (kmPct >= 95 && kmPct <= 105) {
+      parts.push(`📏 Corriste <b>${realKm.toFixed(1)} km</b> de los ${plannedKm.toFixed(0)} km planificados — volumen prácticamente exacto.`);
+    } else if (kmPct > 105) {
+      parts.push(`📏 Corriste <b>${realKm.toFixed(1)} km</b>, ${(realKm-plannedKm).toFixed(1)} km más de lo planificado (${plannedKm.toFixed(0)} km). Bien, pero cuida no acumular demasiado volumen extra semana tras semana.`);
+    } else if (kmPct < 70) {
+      parts.push(`📏 Corriste <b>${realKm.toFixed(1)} km</b> de los ${plannedKm.toFixed(0)} km planificados (${kmPct}%) — bastante por debajo del objetivo de volumen.`);
+    } else {
+      parts.push(`📏 Corriste <b>${realKm.toFixed(1)} km</b> de los ${plannedKm.toFixed(0)} km planificados (${kmPct}%).`);
+    }
+  }
+
+  if (avgRealPaceSec && plannedPaceSec) {
+    const diff = avgRealPaceSec - plannedPaceSec;
+    if (Math.abs(diff) <= 5) {
+      parts.push(`⚡ Tu pace real promedio (<b>${fmtP(avgRealPaceSec)}</b> min/km) coincidió con lo planificado.`);
+    } else if (diff > 5) {
+      parts.push(`⚡ Tu pace real promedio fue <b>${fmtP(avgRealPaceSec)}</b> min/km, ${Math.round(diff)}s más lento que lo planificado (${fmtP(plannedPaceSec)}). Puede ser fatiga acumulada, calor o terreno — no es necesariamente malo si las tiradas largas se hicieron suaves a propósito.`);
+    } else {
+      parts.push(`⚡ Tu pace real promedio fue <b>${fmtP(avgRealPaceSec)}</b> min/km, ${Math.round(-diff)}s más rápido que lo planificado (${fmtP(plannedPaceSec)}). Buena señal de progreso — pero vigila no forzar los rodajes suaves.`);
+    }
+  }
+
+  if (skippedSessions.length > 0) {
+    const skippedTypes = skippedSessions.map(s => s.tipo).join(', ');
+    parts.push(`⏭ Sesiones omitidas: <b>${skippedTypes}</b>. Si fue por descanso necesario, está bien — el cuerpo también progresa recuperándose.`);
+  }
+
+  let suggestion = '';
+  if (compliancePct === 100 && kmPct >= 90) {
+    suggestion = '💡 Vas muy bien encaminada/o. Mantén esta consistencia para la siguiente semana.';
+  } else if (compliancePct < 75) {
+    suggestion = '💡 Para la próxima semana, intenta identificar qué día es más difícil entrenar y ajusta tu horario con anticipación.';
+  } else if (kmPct < 80 && compliancePct >= 75) {
+    suggestion = '💡 Marcaste las sesiones como realizadas pero el volumen real quedó corto — revisa si los km registrados reflejan bien lo corrido.';
+  }
+
+  return `<div class="wk-analysis">
+    <div class="wk-analysis-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Análisis de la semana ${week.num}</div>
+    <div class="wk-analysis-grid">
+      <div class="wk-analysis-stat">
+        <div class="wk-analysis-stat-val" style="color:${compliancePct>=75?'var(--ok)':compliancePct>=50?'var(--warn)':'var(--acc)'}">${compliancePct}%</div>
+        <div class="wk-analysis-stat-lbl">Cumplimiento</div>
+      </div>
+      <div class="wk-analysis-stat">
+        <div class="wk-analysis-stat-val" style="color:var(--pri)">${realKm.toFixed(1)} km</div>
+        <div class="wk-analysis-stat-lbl">Realizados de ${plannedKm.toFixed(0)} km</div>
+      </div>
+    </div>
+    <div class="wk-analysis-text">
+      ${parts.map(p => '<div style="margin-bottom:6px">' + p + '</div>').join('')}
+      ${suggestion ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">' + suggestion + '</div>' : ''}
+    </div>
   </div>`;
 }
 
@@ -3390,6 +3505,7 @@ function saveRealTime(planId, weekNum, dayName, key, tipo, kmPlan) {
   }
   syncRealTime(planId, weekNum, dayName, { km, time: timeStr, pace, tipo });
   showToast('Tiempo guardado ✓');
+  updateWeekAnalysisBlock(planId, weekNum);
 }
 
 function getRealTimeDisplay(planId, weekNum, dayName) {
@@ -3795,6 +3911,30 @@ function markSession(planId, weekNum, dayName, status) {
   if (alt) alt.classList.toggle('open', newStatus==='skipped');
   // Update week counter in accordion header
   updateWeekCounter(weekNum);
+  // Update or insert the week analysis block (appears only when week is 100% marked)
+  updateWeekAnalysisBlock(planId, weekNum);
+}
+
+function updateWeekAnalysisBlock(planId, weekNum) {
+  if (!planObj) return;
+  const week = planObj.weeks.find(w => w.num === +weekNum);
+  if (!week) return;
+  // Find the accordion body for this week — identified by data attribute
+  const accBodies = document.querySelectorAll('.abody');
+  let targetBody = null;
+  accBodies.forEach(body => {
+    const header = body.previousElementSibling;
+    if (header && header.querySelector('.tr') && header.querySelector('.tr').textContent.trim() === ('Semana ' + weekNum)) {
+      targetBody = body;
+    }
+  });
+  if (!targetBody) return;
+  // Remove existing analysis block if present
+  const existing = targetBody.querySelector('.wk-analysis');
+  if (existing) existing.remove();
+  // Insert fresh analysis if conditions are met
+  const html = renderWeekAnalysis(week, planId);
+  if (html) targetBody.insertAdjacentHTML('beforeend', html);
 }
 
 function toggleNutrition(key) {
@@ -4100,6 +4240,7 @@ function renderPlan(plan, fd) {
         '<div class="week-obj">' + w.objetivo + '</div>' +
         sessHTML +
         optionalDaysHTML(w.optionalDays) +
+        renderWeekAnalysis(w, planId) +
       '</div>' +
     '</div>';
   }).join('');
